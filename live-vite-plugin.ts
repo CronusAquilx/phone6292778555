@@ -6,6 +6,7 @@ import type { Plugin } from "vite";
 import WebSocket, { WebSocketServer } from "ws";
 
 import type { LiveConnector, LiveSocket } from "./src/lib/live-relay.server";
+import { photonSocketTarget } from "./src/lib/games/socket-relay";
 
 function liveSocket(socket: WebSocket): LiveSocket {
   return {
@@ -113,6 +114,27 @@ export function liveVoiceDev(): Plugin {
       const sockets = new WebSocketServer({ noServer: true, maxPayload: 5 * 1024 * 1024 });
       let disposed = false;
       const upgrade = (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+        if (request.url?.split("?", 1)[0] === "/api/game-ws") {
+          const params = new URL(request.url ?? "/", "http://localhost").searchParams;
+          const target = photonSocketTarget(params.get("url") ?? "");
+          if (!target) return rejectUpgrade(socket, 403);
+          const protocols = (request.headers["sec-websocket-protocol"] ?? "").split(",").map(p => p.trim()).filter(Boolean);
+          socket.on("error", () => {});
+          const upstream = new WebSocket(target, protocols, { handshakeTimeout: 10000, perMessageDeflate: false });
+          upstream.once("open", () => {
+            if (socket.destroyed) { upstream.terminate(); return; }
+            sockets.handleUpgrade(request, socket, head, browser => {
+              browser.on("message", (data, binary) => { if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary }); });
+              upstream.on("message", (data, binary) => { if (browser.readyState === WebSocket.OPEN) browser.send(data, { binary }); });
+              browser.on("close", () => upstream.close());
+              browser.on("error", () => upstream.terminate());
+              upstream.on("close", () => browser.close());
+              upstream.on("error", () => browser.close(1011, "Game server connection failed"));
+            });
+          });
+          upstream.once("error", () => rejectUpgrade(socket, 502));
+          return;
+        }
         if (request.url?.split("?", 1)[0] === "/api/proxy-ws") {
           void (async () => {
             const params = new URL(request.url ?? "/", "http://localhost").searchParams;

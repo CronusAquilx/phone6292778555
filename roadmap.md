@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Arcade BuildNow GG matchmaking
+- [x] Repair Worker Blob-to-text corruption in both binary socket relays and add the missing preview arcade upgrade handler; cloud launches remain unchanged.
+- [x] 15 focused tests pass and compilation is clean. Arcade BuildNow GG reaches ConnectedToMasterServer in the preview with a populated lobby and enabled Play button; completed matches and the unpublished production repair remain unverified.
+
 ## Stable home icons and seasonal particle controls
 - [x] Persist fixed app coordinates across leaving/returning and additions/removals; re-added home icons start in the screen center.
 - [x] Add separately saved snow and leaf amount sliders including Off, without removing the seasonal appearance.

@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleLiveRequest } from "./lib/live-relay.server";
 import { authenticateRequest } from "./lib/astra/api-user.server";
+import { photonSocketTarget, prepareBinaryRelay } from "./lib/games/socket-relay";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -62,6 +63,7 @@ async function proxyWebSocket(url: URL): Promise<Response> {
   up.accept();
   const pair = new WebSocketPair();
   const browser = pair[1];
+  prepareBinaryRelay(up, browser);
   browser.accept();
   browser.send(JSON.stringify({ __astra: "open", protocol: res.headers.get("sec-websocket-protocol") ?? "" }));
   const safe = (c: number) => (c >= 1000 && c < 5000 && c !== 1005 && c !== 1006 ? c : 1000);
@@ -74,16 +76,14 @@ async function proxyWebSocket(url: URL): Promise<Response> {
 }
 
 /** Multiplayer game servers (Photon) reachable over the app's own port 443, for networks that block game ports. */
-const GAME_SOCKET_HOST = /(^|\.)(exitgames\.com|photonengine\.(io|com))$/i;
 async function relayGameSocket(request: Request, url: URL): Promise<Response> {
-  let target: URL;
-  try { target = new URL(url.searchParams.get("url") ?? ""); } catch { return new Response("Bad url", { status: 400 }); }
-  if (target.protocol !== "wss:" || !GAME_SOCKET_HOST.test(target.hostname)) return new Response("Not allowed", { status: 403 });
+  const target = photonSocketTarget(url.searchParams.get("url") ?? "");
+  if (!target) return new Response("Not allowed", { status: 403 });
   if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") return new Response("Expected websocket", { status: 426 });
   const protocol = request.headers.get("sec-websocket-protocol") ?? "";
   const headers: Record<string, string> = { Upgrade: "websocket", "user-agent": "Mozilla/5.0" };
   if (protocol) headers["sec-websocket-protocol"] = protocol;
-  // Workers can only open outbound sockets on standard ports; Photon serves WSS on 443 too.
+  // Photon supports its secure WebSocket endpoint on 443 (verified for NameServer).
   target.port = "";
   const res = await fetch(target.href.replace(/^wss/, "https"), { headers });
   const up = (res as Response & { webSocket?: WS | null }).webSocket;
@@ -91,6 +91,7 @@ async function relayGameSocket(request: Request, url: URL): Promise<Response> {
   up.accept();
   const pair = new WebSocketPair();
   const browser = pair[1];
+  prepareBinaryRelay(up, browser);
   browser.accept();
   const safe = (c: number) => (c >= 1000 && c < 5000 && c !== 1005 && c !== 1006 ? c : 1000);
   browser.addEventListener("message", (e) => { try { up.send(e.data); } catch {} });
