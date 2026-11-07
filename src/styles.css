@@ -1512,3 +1512,109 @@ html[data-wallpaper-overlay="frosted"] .appearance-wallpaper-overlay { backgroun
 @media (prefers-reduced-motion: reduce) {
   html[data-app-icon-shape] :is(.reference-game, .switch-tile, .apple-dock-item, .desktop-dock-item) { transition: none; }
 }
+
+/* Seasonal presentation is reversible: it never replaces saved appearance values. */
+:root {
+  --season-snow: oklch(.99 .006 220);
+  --season-ice: oklch(.78 .1 230);
+  --season-leaf-red: oklch(.61 .2 30);
+  --season-leaf-gold: oklch(.8 .16 80);
+  --season-leaf-copper: oklch(.69 .17 48);
+  --season-leaf-vein: oklch(.31 .06 40);
+  --season-frost-shadow: 0 2px 7px color-mix(in oklch, var(--season-ice) 38%, transparent);
+}
+html[data-season="christmas"] {
+  --season-background: oklch(.23 .045 235);
+  --season-panel: oklch(.3 .047 230);
+  --season-foreground: oklch(.98 .008 220);
+  --season-accent: var(--season-ice);
+  --season-secondary: oklch(.35 .055 230);
+  --season-muted: oklch(.8 .035 225);
+  --season-edge: oklch(.8 .08 230 / .32);
+  --season-ink: oklch(.17 .03 235);
+}
+html[data-season="thanksgiving"] {
+  --season-background: oklch(.23 .045 25);
+  --season-panel: oklch(.3 .054 35);
+  --season-foreground: oklch(.96 .025 85);
+  --season-accent: var(--season-leaf-copper);
+  --season-secondary: oklch(.36 .07 35);
+  --season-muted: oklch(.8 .052 70);
+  --season-edge: oklch(.73 .13 55 / .32);
+  --season-ink: oklch(.17 .028 25);
+}
+html[data-season] :is(body, #site-content, .console-shell, .console-app-body, .console-login-form, .native-app, .qaisify-application, .skin-wii, .skin-neutral, .xbox-series, .appearance-settings, .personalization-preview, [data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="select-content"]) {
+  --background: var(--season-background);
+  --foreground: var(--season-foreground);
+  --card: var(--season-panel);
+  --card-foreground: var(--season-foreground);
+  --popover: var(--season-panel);
+  --popover-foreground: var(--season-foreground);
+  --primary: var(--season-accent);
+  --primary-foreground: var(--season-ink);
+  --secondary: var(--season-secondary);
+  --secondary-foreground: var(--season-foreground);
+  --muted: var(--season-secondary);
+  --muted-foreground: var(--season-muted);
+  --accent: var(--season-secondary);
+  --accent-foreground: var(--season-foreground);
+  --border: var(--season-edge);
+  --input: var(--season-edge);
+  --ring: var(--season-accent);
+  --star: var(--season-accent);
+  --star-foreground: var(--season-ink);
+  --sidebar: var(--season-background);
+  --sidebar-foreground: var(--season-foreground);
+  --sidebar-accent: var(--season-secondary);
+  --sidebar-border: var(--season-edge);
+  --console-background: var(--season-background);
+  --console-panel: var(--season-panel);
+  --console-foreground: var(--season-foreground);
+  --console-ink: var(--season-ink);
+  --console-accent: var(--season-accent);
+  --console-particle: var(--season-accent);
+  --xbox-accent: var(--season-accent);
+  --wii-background: var(--season-background);
+  --wii-panel: var(--season-panel);
+  --wii-text: var(--season-foreground);
+  --wii-accent: var(--season-accent);
+  --wii-border: var(--season-edge);
+  --desktop-ink: var(--season-foreground);
+  --desktop-cyan: var(--season-accent);
+  --music-brand: var(--season-accent);
+  --chooser-highlight: var(--season-accent);
+  --bubble: var(--season-secondary);
+  --bubble-foreground: var(--season-foreground);
+}
+html[data-season] :is(.windows-desktop, .apple-desktop, .switch-surface, .desktop-home-shell) {
+  background-color: var(--season-background);
+}
+html[data-season] :is(.windows-window-titlebar, .desktop-system-bar, .apple-menu-bar, .switch-header, .console-app-header) {
+  border-bottom-color: var(--season-edge);
+  background-color: color-mix(in oklch, var(--season-panel) 90%, transparent);
+}
+.seasonal-theme-picker { padding: 18px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.seasonal-theme-options { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.seasonal-theme-option { min-height: 40px; gap: 8px; background: var(--card); color: var(--foreground); border-color: var(--border); }
+.seasonal-theme-option[aria-pressed="true"] { border-color: var(--star); background: color-mix(in oklch, var(--star) 16%, var(--card)); }
+.seasonal-choice-check { flex-shrink: 0; }
+.seasonal-experience { position: fixed; inset: 0; z-index: 480; pointer-events: none; overflow: hidden; contain: strict; }
+.seasonal-particles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.seasonal-corner { position: absolute; bottom: 6px; font-size: 38px; opacity: .6; filter: drop-shadow(var(--season-frost-shadow)); }
+.seasonal-corner-left { left: 6px; transform: rotate(-12deg); }
+.seasonal-corner-right { right: 6px; transform: rotate(12deg); }
+.seasonal-snowbank { position: absolute; bottom: -6px; left: 0; right: 0; height: 13px; border-radius: 48% 55% 0 0; background: var(--season-snow); opacity: .85; box-shadow: var(--season-frost-shadow); }
+/* Sparse stationary snow caps, not every button, and never over the button label. */
+html[data-season="christmas"] #site-content button:nth-of-type(4n+1):not([role="switch"]):not([data-season-choice]) {
+  background-image: radial-gradient(ellipse 24px 7px at 20% 0, var(--season-snow) 70%, transparent 76%), radial-gradient(ellipse 14px 6px at 38% 0, var(--season-snow) 72%, transparent 78%), radial-gradient(ellipse 18px 5px at 85% 0, var(--season-snow) 70%, transparent 78%);
+  background-repeat: no-repeat;
+  border-top-color: var(--season-snow);
+}
+html[data-season="thanksgiving"] #site-content :is(.layout-choice, .desktop-widget, .windows-glass, .console-tile):nth-of-type(3n+1) { border-top-color: var(--season-leaf-gold); }
+html[data-season]:has(:fullscreen) .seasonal-experience { display: none; }
+@media (max-width: 600px) {
+  .seasonal-theme-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .seasonal-theme-option { padding: 8px 5px; font-size: 11px; flex-direction: column; gap: 4px; height: 68px; white-space: normal; }
+  .seasonal-choice-check { display: none; }
+  .seasonal-corner { font-size: 25px; }
+}

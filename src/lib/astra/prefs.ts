@@ -2,9 +2,11 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import type { DesktopShortcut } from "@/lib/windows/desktop-shortcuts";
+import type { SeasonalTheme } from "./seasonal";
 import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayout, type AppearanceProfile, type AppearanceProfiles } from "./appearance";
 
 export type Prefs = {
+  seasonalTheme: SeasonalTheme;
   desktopShortcuts: DesktopShortcut[];
   musicTheme: string;
   musicBarHidden: boolean;
@@ -48,6 +50,7 @@ export type Prefs = {
 };
 
 export const DEFAULT_PREFS: Prefs = {
+  seasonalTheme: "neither",
   desktopShortcuts: [],
   musicTheme: "midnight-void",
   musicBarHidden: false,
@@ -134,6 +137,7 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 let revision = 0;
 let accountReady = false;
 let accountLoad: Promise<void> | undefined;
+let visitSeasonalTheme: SeasonalTheme | undefined;
 let saveStatus: "local" | "saving" | "saved" | "error" = "local";
 const statusSubs = new Set<() => void>();
 function status(value: typeof saveStatus) { saveStatus = value; statusSubs.forEach(f => f()); }
@@ -151,7 +155,7 @@ export function activatePreferenceAccount(userId: string | null): Promise<void> 
 async function loadPreferenceAccount(userId: string | null) {
   clearTimeout(saveTimer);
   const generation = ++revision;
-  const selection = { layout: state.layout, console: state.console };
+  const selection = { layout: state.layout, console: state.console, ...(visitSeasonalTheme ? { seasonalTheme: visitSeasonalTheme } : {}) };
   account = userId; accountReady = false; loaded = true;
   let cached: Partial<Prefs> = {};
   if (userId) { try { cached = JSON.parse(localStorage.getItem(`${KEY}:${userId}`) || "{}"); } catch { /* invalid cache */ } }
@@ -273,7 +277,14 @@ export function setPrefs(p: Partial<Prefs>) {
 }
 
 export function resetPrefs() {
+  visitSeasonalTheme = undefined;
   setPrefs(DEFAULT_PREFS);
+}
+
+/** Opening choices survive account confirmation; layout appearances stay independent. */
+export function setSeasonalTheme(seasonalTheme: SeasonalTheme) {
+  visitSeasonalTheme = seasonalTheme;
+  setPrefs({ seasonalTheme });
 }
 
 export function getAppearance(p: Prefs, layout: AppearanceLayout = activeLayout(p)): AppearanceProfile {

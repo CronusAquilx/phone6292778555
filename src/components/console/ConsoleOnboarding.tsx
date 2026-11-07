@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { activeLayout, type AppearanceProfile } from "@/lib/astra/appearance";
 import { PersonalizationSetup } from "./PersonalizationSetup";
 import { LayoutPreview } from "./LayoutPreview";
+import { SeasonalThemePicker } from "@/components/astra/SeasonalThemePicker";
 export function ConsoleOnboarding({accountSetup=false}:{accountSetup?:boolean}) {
  const p=usePrefs();const {send}=useVisit();const [step,setStep]=useState(accountSetup?1:0);const [selected,setSelected]=useState(0);
  const finish=useServerFn(finishAccountSetup); const navigate=useNavigate();const [busy,setBusy]=useState(false);
@@ -23,7 +24,7 @@ export function ConsoleOnboarding({accountSetup=false}:{accountSetup?:boolean}) 
  if(step===3)return <PersonalizationSetup busy={busy} onBack={()=>setStep(2)} onConfirm={look=>void confirm(look)}/>;
  return <ConsoleShell><main className={`layout-chooser ${step===0?"is-layout-step":""}`}>
    <header className="layout-chooser-header"><span className="layout-wordmark">birch<span>OS</span></span><span className="text-xs text-console-foreground/55">{step===0?"Your space. Your style.":"Make it yours."}</span></header>
-   <div className="layout-chooser-content" key={step}><div className="layout-chooser-heading"><div><p className="mb-2 text-xs text-console-foreground/55">{step===0?"WELCOME HOME":"PERSONALIZE"}</p><h1 className="text-3xl font-medium md:text-4xl">{step===0?"Choose your layout":step===1?"Your device":"Your favorites"}</h1></div><span className="layout-step-mark">0{step+1}<span> / 03</span></span></div>
+   <div className="layout-chooser-content" key={step}>{step===0&&<SeasonalThemePicker/>}<div className="layout-chooser-heading"><div><p className="mb-2 text-xs text-console-foreground/55">{step===0?"WELCOME HOME":"PERSONALIZE"}</p><h1 className="text-3xl font-medium md:text-4xl">{step===0?"Choose your layout":step===1?"Your device":"Your favorites"}</h1></div><span className="layout-step-mark">0{step+1}<span> / 03</span></span></div>
    <div className={`layout-choice-grid ${step===0?"":"layout-choice-simple"}`}>{choices.map((c,n)=><Button key={c.value} variant="console" size="console" aria-label={c.label} onClick={()=>void choose(n)} onFocus={()=>setSelected(n)} onPointerEnter={()=>setSelected(n)} className={`layout-choice ${n===selected?"is-highlighted":""}`}>
      {step===0?<LayoutPreview layout={c.value}/>:<div className="layout-choice-symbol"><c.icon/></div>}
      <span className="layout-choice-label"><span className="flex min-w-0 items-center gap-2"><c.icon className="size-4 shrink-0"/><span>{c.label}</span></span><ArrowUpRight className="layout-choice-arrow size-4"/></span>

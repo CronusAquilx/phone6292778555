@@ -17,6 +17,7 @@ import { SiteControl } from "@/components/astra/SiteControl";
 import { VisitProvider } from "@/lib/console/visit";
 import { VisitGate } from "@/components/console/VisitGate";
 import { AuthProvider } from "@/lib/auth";
+import { SeasonalExperience } from "@/components/astra/SeasonalExperience";
 
 function NotFoundComponent() {
   return (
@@ -115,6 +116,7 @@ function RootComponent() {
       <AuthProvider>
         <VisitProvider>
           <div id="site-content" className="h-dvh w-full"><VisitGate><Outlet /></VisitGate></div>
+          <SeasonalExperience />
         </VisitProvider>
         <SiteControl />
         <Toaster />

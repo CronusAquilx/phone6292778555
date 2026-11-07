@@ -1,5 +1,10 @@
 # Birchbeat import roadmap
 
+## Current request — seasonal themes
+- [x] Add Christmas, Thanksgiving and Neither above layout choices and in shared Settings.
+- [x] Apply seasonal colors, snow, occasional snowy buttons and harvest leaves across shells and menus without changing saved layout appearances; third-party page interiors remain unchanged.
+- [x] Run 14 focused preference/rule checks and inspect automatic compilation; one short chooser interaction confirms all switches. Broad visual testing stays user-owned.
+
 ## Current request — YouTube preview fallback
 - [x] Restore the original verified video lookup for catalog playback and embed-error alternatives; keep previews as the last resort.
 - [x] Five focused player tests pass and compilation is clean; a real catalog-track playback check advanced past 30 seconds with a 320-second YouTube duration. Full shell/listening checks remain user-owned.

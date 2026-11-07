@@ -1,7 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { setPrefs, setAppearance, resetPrefs } from "./prefs";
+import { setPrefs, setAppearance, resetPrefs, getPrefsSnapshot, setSeasonalTheme } from "./prefs";
 
 describe("persisted appearance switching", () => {
+  it("keeps Christmas global across all nine layouts without replacing saved appearance", () => {
+    resetPrefs(); setPrefs({ console: "off", layout: "windows" });
+    setAppearance("windows", { accent: "aqua", palette: "forest", particles: "fireflies" });
+    const original = getPrefsSnapshot().appearances.windows;
+    setSeasonalTheme("christmas");
+    for (const console of ["sony", "series", "wii", "neutral"] as const) {
+      setPrefs({ console }); expect(getPrefsSnapshot().seasonalTheme).toBe("christmas");
+    }
+    for (const layout of ["windows", "windows2", "macos", "ipad", "switch"] as const) {
+      setPrefs({ console: "off", layout }); expect(getPrefsSnapshot().seasonalTheme).toBe("christmas");
+    }
+    expect(getPrefsSnapshot().appearances.windows).toEqual(original);
+  });
+  it("supports Thanksgiving and Neither without replacing the music theme", () => {
+    resetPrefs(); setPrefs({ musicTheme: "aurora" });
+    setSeasonalTheme("thanksgiving"); expect(getPrefsSnapshot().seasonalTheme).toBe("thanksgiving");
+    setSeasonalTheme("neither"); expect(getPrefsSnapshot().seasonalTheme).toBe("neither");
+    expect(getPrefsSnapshot().musicTheme).toBe("aurora");
+  });
   it("retains music-bar visibility across layout changes", () => {
     resetPrefs(); setPrefs({ musicBarHidden: true }); setPrefs({ console: "sony" });
     expect(JSON.parse(localStorage.getItem("astra-prefs") || "{}").musicBarHidden).toBe(true);

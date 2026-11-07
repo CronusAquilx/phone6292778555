@@ -21,6 +21,7 @@ import { DeveloperGameSettings } from "@/components/games/DeveloperGameSettings"
 import { LiveVisitorsPanel } from "@/components/astra/LiveVisitorsPanel";
 import { useDeveloperGameAccess } from "@/lib/games/developer-games";
 import { useStaffRole } from "@/lib/astra/staff";
+import { SeasonalThemePicker } from "@/components/astra/SeasonalThemePicker";
 
 
 
@@ -108,6 +109,7 @@ export function SettingsView() {
         {tab === "Home" && <div className="windows-settings-home"><div className="settings-device"><img src={wallpaper} alt="Desktop wallpaper"/><div><h3>BirchBlock desktop</h3><span>{p.layout === "windows2" ? "Windows 2.0 layout" : "Windows layout"}</span></div><Button variant="ghost" onClick={() => setTab("Layout")}><Monitor/>System</Button></div><div className="settings-recommendations"><section><h3>Recommended settings</h3>{(["Appearance","Privacy","Essences"] as const).map(t => { const Icon = TAB_ICONS[t]; return <Button key={t} variant="ghost" onClick={() => setTab(t)}><Icon/><span>{TAB_LABELS[t]}</span><ChevronRight/></Button>; })}</section><section><h3>Personalize your desktop</h3><img src={wallpaper} alt=""/><Button variant="secondary" onClick={() => setTab("Appearance")}><Palette/>Wallpaper & colors<ChevronRight/></Button></section></div><section className="settings-app-launchers"><h3>Applications</h3>{[{ name:"Music",icon:Music,path:"/music" as const },{name:"Movies & TV",icon:Film,path:"/movies" as const},{name:"Games",icon:Gamepad2,path:"/games" as const}].map(a => <Button key={a.name} variant="ghost" onClick={() => void navigate({ to:a.path })}><a.icon/>{a.name}<ChevronRight/></Button>)}</section></div>}
         {tab === "Layout" && (
           <>
+            <SeasonalThemePicker/>
             <Card title="App layout">
               <Choice
                 value={p.layout}

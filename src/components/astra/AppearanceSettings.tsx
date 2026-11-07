@@ -19,6 +19,7 @@ import { AppearancePreview } from "./AppearancePreview";
 import { PersonalizationControls } from "./PersonalizationControls";
 import { LayoutAppearanceControls } from "./LayoutAppearanceControls";
 import { toast } from "sonner";
+import { SeasonalThemePicker } from "./SeasonalThemePicker";
 
 function Setting({ label, children }: { label: string; children: ReactNode }) {
   return <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-4"><span className="text-sm">{label}</span><div className="max-w-full">{children}</div></div>;
@@ -34,6 +35,7 @@ export function AppearanceSettings() {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   return <div className="appearance-settings text-foreground">
+    <SeasonalThemePicker/>
     <nav aria-label="Customize layout" className="flex flex-wrap gap-2 border-b border-border pb-5">
       {VISIBLE_LAYOUTS.map(id => <Button key={id} variant={layout === id ? "secondary" : "ghost"} aria-pressed={layout === id} onClick={() => { setLayout(id); setImage(""); setError(""); }}>{id === "sony" || id === "series" ? <Gamepad2/> : <LayoutPanelLeft/>}{LAYOUT_NAMES[id]}</Button>)}
     </nav>

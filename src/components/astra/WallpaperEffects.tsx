@@ -6,7 +6,7 @@ export function WallpaperEffects({ appearance }: { appearance?: ReturnType<typeo
   const prefs = usePrefs();
   const look = appearance ?? getAppearance(prefs);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const enabled = (look.particles !== "off" || look.liveWallpaper !== "off") && !look.reduceMotion && !prefs.perfMode && prefs.device !== "phone";
+  const enabled = (appearance !== undefined || prefs.seasonalTheme === "neither") && (look.particles !== "off" || look.liveWallpaper !== "off") && !look.reduceMotion && !prefs.perfMode && prefs.device !== "phone";
   useEffect(() => {
     const node = canvas.current;
     if (!node || !enabled) return;
