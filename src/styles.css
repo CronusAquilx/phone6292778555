@@ -1621,7 +1621,7 @@ html[data-season="christmas"] #site-content :is(.layout-choice, .console-tile):n
   box-shadow: inset 0 2px 0 color-mix(in oklch, var(--season-snow) 45%, transparent);
 }
 html[data-season="thanksgiving"] #site-content :is(.layout-choice, .console-tile):nth-child(3n+1) { border-top-color: var(--season-leaf-gold); }
-html[data-season]:has(:fullscreen:not(html):not(body):not(#site-content)) .seasonal-experience { display: none; }
+html[data-season]:has(video:fullscreen, iframe:fullscreen) .seasonal-experience { display: none; }
 @media (max-width: 600px) {
   .seasonal-theme-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .seasonal-theme-option { padding: 8px 4px; font-size: 11px; flex-direction: column; gap: 6px; height: 62px; white-space: normal; }

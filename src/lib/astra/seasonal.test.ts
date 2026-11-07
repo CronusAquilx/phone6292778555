@@ -9,10 +9,10 @@ describe("seasonal presentation rules", () => {
     expect(seasonalThemeForPath("christmas", "/play")).toBe("neither");
     expect(seasonalThemeForPath("thanksgiving", "/play/game")).toBe("neither");
   });
-  it("keeps selected seasonal motion visible in low-power mode while respecting reduced motion", () => {
+  it("always shows particles once a season is explicitly selected", () => {
     expect(seasonalMotionEnabled(false, false, false)).toBe(true);
-    expect(seasonalMotionEnabled(true, false, false)).toBe(false);
+    expect(seasonalMotionEnabled(true, false, false)).toBe(true);
     expect(seasonalMotionEnabled(false, true, false)).toBe(true);
-    expect(seasonalMotionEnabled(false, false, true)).toBe(false);
+    expect(seasonalMotionEnabled(false, false, true)).toBe(true);
   });
 });

@@ -41,7 +41,7 @@ export function SeasonalExperience() {
     const snow = tokens.getPropertyValue("--season-snow").trim();
     const colors = ["--season-leaf-red", "--season-leaf-gold", "--season-leaf-copper"].map(key => tokens.getPropertyValue(key).trim());
     const vein = tokens.getPropertyValue("--season-leaf-vein").trim();
-    const count = season === "christmas" ? Math.min(prefs.perfMode ? 100 : 240, Math.round(width / 5)) : Math.min(prefs.perfMode ? 24 : 60, Math.round(width / 20));
+    const count = season === "christmas" ? Math.min(prefs.perfMode || look.reduceMotion || systemReduced ? 100 : 240, Math.round(width / 5)) : Math.min(prefs.perfMode || look.reduceMotion || systemReduced ? 24 : 60, Math.round(width / 20));
     const points = Array.from({ length: count }, (_, i) => ({ x: Math.random() * width, y: Math.random() * height,
       size: season === "christmas" ? 1.2 + Math.random() * 3.8 : 10 + Math.random() * 13,
       speed: 30 + Math.random() * (season === "christmas" ? 68 : 42), phase: Math.random() * Math.PI * 2,
@@ -83,7 +83,7 @@ export function SeasonalExperience() {
     document.addEventListener("visibilitychange", resume); document.addEventListener("fullscreenchange", resume);
     frame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", resume); document.removeEventListener("fullscreenchange", resume); };
-  }, [season, motion, prefs.perfMode]);
+  }, [season, motion, prefs.perfMode, look.reduceMotion, systemReduced]);
   if (season === "neither") return null;
   return <div className="seasonal-experience" data-season-decoration={season} aria-hidden="true">
     {motion && <canvas ref={canvas} className="seasonal-particles"/>}
