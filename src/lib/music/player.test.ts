@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPlayer, playList, stop, type Track } from "./player";
 import { searchMusic, searchPreviews } from "./client-search";
 
-vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth: { getSession: async () => ({ data: { session: null } }) } } }));
 vi.mock("@/lib/astra/proxy", () => ({ openProxied: vi.fn() }));
 vi.mock("./client-search", () => ({ searchMusic: vi.fn(), searchPreviews: vi.fn() }));
 
@@ -31,10 +31,27 @@ beforeEach(() => {
   Object.assign(window, { YT: { Player: FakePlayer } });
   vi.mocked(searchMusic).mockResolvedValue([]);
   vi.mocked(searchPreviews).mockResolvedValue([]);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ids: [] }) }));
 });
-afterEach(() => { stop(); vi.restoreAllMocks(); vi.clearAllMocks(); });
+afterEach(() => { stop(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 describe("song switching recovery", () => {
+  it("resolves an album's preview track to the original verified full YouTube song", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ ids: ["FGBhQbmPwH8"] }) } as Response);
+    await playList([{ ...song("123"), source: "itunes", preview: "https://example.com/preview.m4a" }], 0);
+    expect(instances[0]?.loadVideoById).toHaveBeenCalledWith("FGBhQbmPwH8");
+    expect(getPlayer().mode).toBe("video");
+    expect(searchPreviews).not.toHaveBeenCalled();
+    expect(searchMusic).not.toHaveBeenCalled();
+  });
+  it("tries a provider-verified alternative before a 30-second preview on embed failure", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ ids: ["FGBhQbmPwH8"] }) } as Response);
+    await playList([song("aaaaaaaaaaa")], 0);
+    instances[0]?.events.onError({ data: 150 });
+    await flush();
+    expect(instances.at(-1)?.loadVideoById).toHaveBeenCalledWith("FGBhQbmPwH8");
+    expect(searchPreviews).not.toHaveBeenCalled();
+  });
   it("ignores a failed previous song after switching back to the working song", async () => {
     const a = song("aaaaaaaaaaa"), b = song("bbbbbbbbbbb");
     await playList([a, b], 0);

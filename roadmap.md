@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Current request — YouTube preview fallback
+- [x] Restore the original verified video lookup for catalog playback and embed-error alternatives; keep previews as the last resort.
+- [x] Five focused player tests pass and compilation is clean; a real catalog-track playback check advanced past 30 seconds with a 320-second YouTube duration. Full shell/listening checks remain user-owned.
+
 ## Current request — distinct per-layout personalization
 - [x] Extend saved appearance profiles with per-layout app shape, logo style, arrangement, size, font, wallpaper overlay, and shell-specific taskbar/dock controls.
 - [x] Add layout-aware Settings controls for PlayStation, Xbox, Wii, Neutral, Windows, Windows 2.0, macOS, iPad, and Switch.

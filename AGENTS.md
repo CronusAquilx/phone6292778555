@@ -43,6 +43,7 @@
 - App-specific navigation lives in shared views with skin-scoped native-app styling; wallpaper effects mount once per desktop/console shell and obey motion/performance preferences to preserve playback and gameplay isolation.
 - Developer-added games use a shared authenticated catalog protected by server role checks and database policies; arbitrary cloud URLs use the existing full proxy fallback, while arcade URLs reuse the inline player with proxied navigation.
 - Music uses sequential Piped search with public key-free YouTube metadata lookup when unavailable; the shared player resolves full songs before Apple/Deezer previews, avoiding music authentication and server API keys.
+- Playback resolves catalog tracks and embed-restricted alternatives through the existing ranked, verified music video endpoint before key-free discovery and previews, preserving provider checks and cached lookups.
 - MusicView re-exports the shared MusicPlayback component; shell-level NowPlayingBar owns persistent controls and theme selection stays in shared preferences to avoid duplicate players.
 - Each music playback attempt owns a fresh YouTube player and guarded callbacks; bounded recovery cannot affect a later track, and the video surface stays outside the visible interface.
 - Movie voice search verifies tracks, retries once per source and respects manual playback; all animation can confirm MAL/AniList dub entries, while Anikoto opens its real search through the proxy, not a guessed embed API.

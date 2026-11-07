@@ -123,6 +123,18 @@ async function startYoutube(my: number) {
   if (playbackWatchdog) clearTimeout(playbackWatchdog);
   playbackWatchdog = setTimeout(() => { if (my === playId && state.loading && state.mode === "video") set({ loading: false, paused: true, status: "Press play to start your song" }); }, 12000);
 }
+async function fullSongCandidates(t: Track, signal: AbortSignal): Promise<string[]> {
+  // Use the original provider's embeddability checks and ranked audio versions.
+  // Public Piped/HTML discovery remains the key-free fallback, not the only path.
+  try {
+    const result = await musicApi<{ ids?: string[] }>({ op: "video", q: `${t.artist} ${t.title}`, title: t.title, artist: t.artist, duration: String(t.duration || 0) });
+    if (signal.aborted) return [];
+    const ids = (Array.isArray(result.ids) ? result.ids : []).filter(id => /^[\w-]{11}$/.test(id));
+    if (ids.length) return [...new Set(ids)].slice(0, 5);
+  } catch { if (signal.aborted) return []; }
+  const results = await searchMusic(`${t.artist} ${t.title}`, signal, true);
+  return signal.aborted ? [] : [...new Set(results.filter(row => !row.preview && /^[\w-]{11}$/.test(row.id)).map(row => row.id))].slice(0, 5);
+}
 async function recoverYoutube(my: number, code: number) {
   const t = state.queue[state.cur];
   const signal = playbackRequest?.signal;
@@ -137,9 +149,9 @@ async function recoverYoutube(my: number, code: number) {
     }
     if (!searchedAlternatives) {
       searchedAlternatives = true;
-      const results = await searchMusic(`${t.artist} ${t.title}`, signal, true);
+      const ids = await fullSongCandidates(t, signal);
       if (my !== playId || signal.aborted) return;
-      candidates = [...new Set([...candidates, ...results.filter(row => !row.preview).map(row => row.id)])].slice(0, 5);
+      candidates = [...new Set([...candidates, ...ids])].slice(0, 5);
     }
     candidateIndex++;
     if (candidates[candidateIndex]) { await startYoutube(my); return; }
@@ -171,12 +183,10 @@ export async function playList(list: Track[], i: number) {
   set({ queue: list, cur: i, status: "Finding your song…", paused: true, loading: true, time: 0, dur: t.duration, mode: null, fallbackId: null });
   audio.playbackRate = state.speed;
   try {
-    const results = t.source === "piped" && !t.preview && /^[\w-]{11}$/.test(t.id) ? [t] : await searchMusic(`${t.artist} ${t.title}`, signal, true);
+    const ids = t.source === "piped" && !t.preview && /^[\w-]{11}$/.test(t.id) ? [t.id] : await fullSongCandidates(t, signal);
     if (my !== playId || signal.aborted) return;
-    const first = results[0];
-    if (!first) { await audioFallback(t, my); return; }
-    if (first.preview) { await audioFallback({ ...t, preview: first.preview }, my); return; }
-    candidates = results.map(row => row.id); candidateIndex = 0;
+    if (!ids.length) { await audioFallback(t, my); return; }
+    candidates = ids; candidateIndex = 0;
     await startYoutube(my);
   } catch { if (my === playId && !signal.aborted) await audioFallback(t, my); }
 }
