@@ -1,5 +1,11 @@
 # Birchbeat import roadmap
 
+## Desktop stores and library (Nov 7)
+- [x] Fix app dragging on Windows, macOS and iPad with shared mouse/touch movement and saved positions.
+- [x] Separate App Store from Windows Original Apps and pin both plus Library by default in desktop layouts.
+- [x] Add owned-app Library with per-layout home-screen visibility controls.
+- [x] Eleven focused tests pass; one Windows 2.0 guest flow confirms dragging, Twitch install and Library remove/add readback, and separate catalogs. Account-sync verification unavailable because the requesting user has no matching account.
+
 ## Current request — seasonal polish and YouTube
 - [x] Repair visible falling snow/leaves, including low-power and site-fullscreen visibility, and replace heavy recoloring and crude button snow with refined seasonal accents.
 - [x] Add YouTube across all layouts using the existing proxied browser and streaming-capable libcurl transport without changing saved browser preferences.

@@ -1,8 +1,9 @@
 import { lazy, type ReactNode } from "react";
-import { Bot, Brain, Film, Gamepad2, Globe, Home, LayoutGrid, Mic, Music, Settings, Users, Youtube } from "lucide-react";
+import { Bot, Brain, Film, Gamepad2, Globe, Home, LayoutGrid, Library, ShoppingBag, Mic, Music, Settings, Users, Youtube } from "lucide-react";
 import { AccountOnly } from "@/components/astra/SignInRequired";
 import type { DesktopApp, WindowTab } from "@/lib/windows/window-model";
 import { StoreView } from "./views/StoreView";
+import { AppLibraryView } from "./views/AppLibraryView";
 import { ALL_TOOL_APPS, toolFromApp, useInstalledTools } from "@/lib/windows/tool-apps";
 const ToolAppView = lazy(() => import("./views/ToolAppView").then(m => ({ default: m.ToolAppView })));
 
@@ -20,7 +21,9 @@ const SocialHub = lazy(() => import("@/components/social/SocialHub").then(m => (
 /** Apps shared by every desktop-style layout (Windows, macOS, iPad). */
 export const DESKTOP_APPS = [
   { id: "home", title: "Home", icon: Home, tone: "cyan" },
-  { id: "store", title: "Birch Store", icon: LayoutGrid, tone: "cyan" },
+  { id: "app-store", title: "App Store", icon: ShoppingBag, tone: "coral" },
+  { id: "store", title: "Windows Original Apps", icon: LayoutGrid, tone: "cyan" },
+  { id: "app-library", title: "Library", icon: Library, tone: "gold" },
   { id: "games", title: "Games", icon: Gamepad2, tone: "green" },
   { id: "web", title: "Browser", icon: Globe, tone: "cyan" },
   { id: "movies", title: "Movies & TV", icon: Film, tone: "coral" },
@@ -42,9 +45,12 @@ export function useLauncherApps(): DesktopAppInfo[] {
 
 /** Renders one app tab; `home` is the layout's own home screen, `children` the routed page. */
 export function DesktopAppContent({ tab, onOpen, home, children }: { tab: WindowTab; onOpen: (app: DesktopApp) => void; home: ReactNode; children?: ReactNode }) {
+  const owned = useLauncherApps();
   switch (tab.app) {
     case "home": return <>{home}</>;
     case "store": return <StoreView onOpen={app => onOpen(app)}/>;
+    case "app-store": return <StoreView webStore onOpen={app => onOpen(app)}/>;
+    case "app-library": return <AppLibraryView apps={owned} onOpen={onOpen}/>;
     case "music": return <MusicView/>;
     case "movies": return <MoviesView/>;
     case "games": return <GamesView initialGame={tab.game}/>;

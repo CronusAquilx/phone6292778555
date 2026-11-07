@@ -6,6 +6,7 @@ import type { SeasonalTheme } from "./seasonal";
 import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayout, type AppearanceProfile, type AppearanceProfiles } from "./appearance";
 
 export type Prefs = {
+  homeScreenApps: Record<string, Record<string, boolean>>;
   seasonalTheme: SeasonalTheme;
   desktopShortcuts: DesktopShortcut[];
   musicTheme: string;
@@ -50,6 +51,7 @@ export type Prefs = {
 };
 
 export const DEFAULT_PREFS: Prefs = {
+  homeScreenApps: {},
   seasonalTheme: "neither",
   desktopShortcuts: [],
   musicTheme: "midnight-void",

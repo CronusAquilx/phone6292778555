@@ -18,8 +18,8 @@ import { WallpaperEffects } from "@/components/astra/WallpaperEffects";
 import { WallpaperMedia } from "@/components/astra/WallpaperMedia";
 import { DesktopClock, DesktopStatusBar } from "@/components/astra/DesktopSurface";
 import { AppIcon } from "@/components/astra/AppIcon";
-import { toolFromApp } from "@/lib/windows/tool-apps";
 import { useIconOrder } from "@/lib/windows/icon-order";
+import { useHomeScreen } from "@/lib/windows/home-screen";
 import { DESKTOP_APPS, DesktopAppContent, desktopAppInfo, useLauncherApps, type DesktopAppInfo } from "./desktop-apps";
 import { DesktopWidgets } from "@/components/astra/DesktopWidgets";
 import { WebsiteFullscreenButton } from "@/components/FullscreenButton";
@@ -67,7 +67,8 @@ export function WindowsDesktop({ children, desktopOnly = false, modern = false }
     return () => { observer.disconnect(); clearInterval(timer); };
   }, []);
   const launcher = useLauncherApps();
-  const deskApps = launcher.filter(a => (modern ? ["web","youtube","music","games","settings"] : ["store","games","web","youtube","music","movies","settings"]).includes(a.id) || !!toolFromApp(a.id)?.url);
+  const homeScreen = useHomeScreen(modern ? "windows2" : "windows");
+  const deskApps = launcher.filter(a => homeScreen.has(a.id));
   const iconOrder = useIconOrder(modern ? "windows2" : "windows", deskApps.map(a => a.id));
   const orderedDesk = iconOrder.order.map(id => deskApps.find(a => a.id === id)).filter((a): a is DesktopAppInfo => !!a);
   const open = (app: DesktopApp, windowIdOrTitle?: string) => {
@@ -221,7 +222,7 @@ export function WindowsDesktop({ children, desktopOnly = false, modern = false }
     <div className={cn("relative z-[310]", modern && "win2-now-playing")}><NowPlayingBar/></div>
     <footer className={cn("windows-taskbar windows-glass relative z-[310] flex h-14 shrink-0 items-center border-t px-3", modern && "win2-taskbar")}>
       <div className="flex min-w-0 flex-1 justify-center gap-1 overflow-x-auto"><Button variant="ghost" size="icon" className={cn("windows-task-button",start && "bg-accent")} title="Start" aria-label="Start" onClick={() => { setStart(!start); setTasks(false); setQuick(false); }}><span className="windows-start-logo" aria-hidden="true"><i/><i/><i/><i/></span></Button><Button variant="ghost" size="icon" title="Search" aria-label="Search apps" className="windows-task-button" onClick={() => { setStart(true); setQuery(""); }}><Search/></Button><Button variant="ghost" size="icon" title="Task view" aria-label="Task view" className="windows-task-button" onClick={() => { setTasks(!tasks); setStart(false); }}><LayoutGrid/></Button>{modern && <Button variant="ghost" size="icon" title="File Explorer" aria-label="File Explorer" className="windows-task-button" onClick={() => open("home", "Home")}><Folder/></Button>}
-        {APPS.filter(a => ["store", "games", "web", "movies", "youtube", "music", "chat", "settings"].includes(a.id)).map(a => <Button key={a.id} variant="ghost" size="icon" className="windows-task-button desktop-dock-item" title={a.title} aria-label={`Launch ${a.title}`} onClick={() => open(a.id)}><span className="desktop-color-icon" data-tone={a.tone}><AppIcon app={a.id}/></span></Button>)}
+        {APPS.filter(a => ["app-store", "store", "app-library", "games", "web", "movies", "youtube", "music", "chat", "settings"].includes(a.id)).map(a => <Button key={a.id} variant="ghost" size="icon" className="windows-task-button desktop-dock-item" title={a.title} aria-label={`Launch ${a.title}`} onClick={() => open(a.id)}><span className="desktop-color-icon" data-tone={a.tone}><AppIcon app={a.id}/></span></Button>)}
         {state.windows.map(w => { const tab = w.tabs.find(t => t.id === w.activeTab); return <Button key={w.id} variant="ghost" size="icon" className={cn("windows-task-button relative",state.active === w.id && "bg-accent")} title={tab?.title} aria-label={`Restore ${tab?.title}`} onClick={() => state.active === w.id && !w.minimized ? dispatch({ type: "minimize", id: w.id }) : dispatch({ type: "focus", id: w.id })}><AppIcon app={tab?.app ?? "home"} className="text-star"/><span className={cn("absolute bottom-0.5 h-0.5 rounded bg-muted-foreground", state.active === w.id ? "w-4 bg-star" : "w-1")}/></Button>; })}
       </div>
       <Button variant="ghost" size="sm" aria-label="Quick settings" title="Quick settings" onClick={() => { setQuick(!quick); setStart(false); }} className="ml-2 px-2"><Wifi/><Volume2 className="hidden sm:block"/></Button>

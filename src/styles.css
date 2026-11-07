@@ -1638,3 +1638,16 @@ html[data-season]:has(video:fullscreen, iframe:fullscreen) .seasonal-experience 
 .mac-desktop-icons > * { direction: ltr; }
 .mac-desktop-icon { display: flex; height: auto; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px; color: var(--desktop-ink, var(--foreground)); text-shadow: 0 1px 4px oklch(0 0 0 / 45%); font-size: 11px; white-space: normal; text-align: center; line-height: 1.15; }
 @media (max-width: 760px) { .mac-desktop-icons { display: none; } }
+
+/* Home icons use pointer dragging, including touch, instead of browser-only HTML dragging. */
+[data-movable-app] { position: relative; touch-action: none !important; user-select: none; cursor: grab; overflow: visible; }
+[data-movable-app] svg, [data-movable-app] img { pointer-events: none; }
+[data-movable-app][data-dragging] { cursor: grabbing; opacity: .8; }
+.windows-shortcuts { display: grid; grid-template-rows: repeat(5, 86px); grid-auto-flow: column; grid-auto-columns: 92px; z-index: 2; }
+.win2-desktop-icons { overflow: visible; }
+.mac-desktop-icons { grid-template-rows: repeat(5, 92px); overflow: visible; }
+.library-app { grid-template-columns: 50px minmax(0, 1fr); }
+.library-app-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.store-app h3 { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .mac-desktop-icons { display: grid; right: 8px; grid-template-rows: repeat(5, 76px); grid-auto-columns: 76px; } }
+@media (max-width: 639px) { .windows-shortcuts { display: grid; grid-template-rows: repeat(5, 70px); grid-auto-columns: 76px; } }

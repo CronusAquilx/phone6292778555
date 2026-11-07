@@ -12,6 +12,7 @@ import { desktopReducer, makeWindow, type DesktopApp, type DesktopWindow, type W
 import { DesktopAppContent, desktopAppInfo, useLauncherApps } from "@/components/windows/desktop-apps";
 import { AppIcon } from "@/components/astra/AppIcon";
 import { useIconOrder } from "@/lib/windows/icon-order";
+import { useHomeScreen } from "@/lib/windows/home-screen";
 import { NowPlayingBar } from "@/components/music/NowPlayingBar";
 import { RoomFollower } from "@/components/RoomFollower";
 import { WallpaperEffects } from "@/components/astra/WallpaperEffects";
@@ -24,7 +25,7 @@ import ipadWallpaper from "@/assets/ipad-wallpaper.jpg";
 
 type Variant = "macos" | "ipad";
 type Panel = null | "spotlight" | "launchpad" | "control" | "switcher" | "add";
-const DOCK: DesktopApp[] = ["store", "games", "web", "movies", "youtube", "music", "chat", "social", "settings"];
+const DOCK: DesktopApp[] = ["app-store", "store", "app-library", "games", "web", "youtube", "music", "settings"];
 let serial = 0;
 const uid = () => `apple-${++serial}`;
 const tabFor = (app: DesktopApp): WindowTab => ({ id: uid(), app, title: desktopAppInfo(app).title });
@@ -71,7 +72,8 @@ export function AppleDesktop({ variant, children }: { variant: Variant; children
   }, []);
 
   const launcher = useLauncherApps();
-  const homeApps = launcher.filter(a => a.id !== "home");
+  const homeScreen = useHomeScreen(variant);
+  const homeApps = launcher.filter(a => homeScreen.has(a.id));
   const iconOrder = useIconOrder(mac ? "macos" : "ipad", homeApps.map(a => a.id));
   const orderedHome = iconOrder.order.map(id => homeApps.find(a => a.id === id)).filter((a): a is typeof homeApps[number] => !!a);
   const open = (app: DesktopApp, intoWindow?: string, fresh = false) => {
@@ -107,7 +109,9 @@ export function AppleDesktop({ variant, children }: { variant: Variant; children
         { label: "About BirchBlock", run: () => open("home") },
         { label: "-", run: () => {} },
         { label: "System Settings…", run: () => open("settings") },
-        { label: "Birch Store…", run: () => open("store") },
+        { label: "App Store…", run: () => open("app-store") },
+        { label: "Windows Original Apps…", run: () => open("store") },
+        { label: "Library…", run: () => open("app-library") },
         { label: "-", run: () => {} },
         { label: `Log Out ${name}…`, run: () => void signOutAll() },
       ], false, "System menu")}
