@@ -17,7 +17,7 @@ type Tab = Snap & { id: number; loading: boolean; back: Snap[]; fwd: Snap[]; non
 let nextId = 1;
 const blank = (): Tab => ({ id: nextId++, title: "New tab", query: "", results: null, url: null, loading: false, back: [], fwd: [], nonce: 0 });
 
-export function WebView({ initialQ, initialSite, proxyOnly = false }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean } = {}) {
+export function WebView({ initialQ, initialSite, proxyOnly = false, app = false }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean; app?: boolean } = {}) {
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
@@ -87,7 +87,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false }: { initialQ
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
+      {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
         <MobileMenuButton />
         {tabs.map((t) => (
           <div key={t.id} className={cn("group flex w-52 shrink-0 items-center gap-2 rounded-t-lg px-3 py-2 text-xs transition-colors", t.id === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:bg-card/60")}>
@@ -110,7 +110,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false }: { initialQ
             className="flex-1 bg-transparent text-sm outline-none" />
         </div>
         {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open in new window"><ExternalLink className="size-4" /></a>}
-      </form>
+      </form></>}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
           <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onFail={() => {
