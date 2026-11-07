@@ -147,14 +147,17 @@ async function recoverYoutube(my: number, code: number) {
     if ([5, 152, 153].includes(code) && !retriedPlayer) {
       retriedPlayer = true; await startYoutube(my); return;
     }
-    if (!searchedAlternatives) {
+    candidateIndex++;
+    if (!candidates[candidateIndex] && !searchedAlternatives) {
+      // Embed-disabled uploads (101/150/152) need other uploads of the same song.
       searchedAlternatives = true;
       const ids = await fullSongCandidates(t, signal);
+      const extra = await searchMusic(`${t.artist} ${t.title} audio`, signal, true).catch(() => []);
       if (my !== playId || signal.aborted) return;
-      candidates = [...new Set([...candidates, ...ids])].slice(0, 5);
+      const fresh = [...ids, ...extra.filter(row => !row.preview && /^[\w-]{11}$/.test(row.id)).map(row => row.id)];
+      candidates = [...new Set([...candidates, ...fresh])].slice(0, 12);
     }
-    candidateIndex++;
-    if (candidates[candidateIndex]) { await startYoutube(my); return; }
+    if (candidates[candidateIndex]) { retriedPlayer = false; await startYoutube(my); return; }
   } catch { /* Fall back only for the same requested song. */ }
   if (my === playId && !signal.aborted) await audioFallback(t, my);
 }
