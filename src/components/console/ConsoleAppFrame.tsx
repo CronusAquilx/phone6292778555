@@ -24,7 +24,7 @@ const TABS = [
 
 /** Console-mode paths that open inside the PS5 media frame instead of the classic sidebar layout. */
 export function isConsoleMediaPath(pathname: string) {
-  return ["/music", "/movies", "/youtube", "/chat", "/web", "/voice", "/memory"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return ["/music", "/movies", "/youtube", "/app", "/chat", "/web", "/voice", "/memory"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /** PS5-style frame around Music, Movies and AI while Console Mode is on: no sidebar. */

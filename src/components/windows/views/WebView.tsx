@@ -23,7 +23,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
-  const framePrefs = proxyOnly && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
+  const framePrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
   const native = (prefs.layout === "windows" || prefs.layout === "windows2") || prefs.console === "sony" || prefs.console === "series";
   const [tabs, setTabs] = useState<Tab[]>(() => [blank()]);
   const [active, setActive] = useState(tabs[0]?.id ?? 1);
@@ -90,7 +90,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   const frameHost = useRef<HTMLDivElement>(null);
   const frameEl = () => frameHost.current?.querySelector("iframe") ?? null;
   const appBack = () => { try { frameEl()?.contentWindow?.history.back(); } catch { step("back"); } };
-  const appReload = () => { try { frameEl()?.contentWindow?.location.reload(); } catch { patch(tab.id, { nonce: tab.nonce + 1 }); } };
+  const appReload = () => patch(tab.id, { nonce: tab.nonce + 1 });
   const appHome = () => { if (initialSite) patch(tab.id, { url: initialSite, title: appTitle, nonce: tab.nonce + 1 }); };
   const appPip = async () => {
     if (await nativeVideoPip(frameEl())) return;
@@ -190,7 +190,7 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: st
   }
   return (
     <div className="flex h-full flex-col">
-      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
+      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share" allowFullScreen />
       <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {status === "loading" && "Starting the proxy…"}
         {status === "ready" && "Loaded through the BirchBlock proxy."}

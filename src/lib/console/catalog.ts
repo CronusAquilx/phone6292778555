@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { getConsoleArcade } from "./catalog.functions";
 import { CLOUD_GAMES } from "@/lib/games/cloud-catalog";
 import { STREAMING_APPS } from "./streaming";
+import { WEB_APPS } from "@/lib/windows/tool-apps";
 import { listDeveloperGames } from "@/lib/games/developer-games.functions";
 
 export type ConsoleGame = {
@@ -23,6 +24,7 @@ export const APPS: ConsoleGame[] = [
   { id: "app-voice", title: "Voice", tagline: "Talk it through.", genre: "Apps", hue: 310, badge: "Included", kind: "app", url: "/voice" },
   { id: "app-memory", title: "Memory", tagline: "Keep what matters.", genre: "Apps", hue: 85, badge: "Included", kind: "app", url: "/memory" },
   ...STREAMING_APPS.map((a): ConsoleGame => ({ id: `app-${a.slug}`, title: a.title, tagline: a.tagline, genre: "Media", hue: a.hue, badge: a.slug === "youtube" ? "Included" : "Free", kind: "app", url: a.slug === "youtube" ? "/youtube" : `/console/stream/${a.slug}`, installable: a.slug !== "youtube" })),
+  ...WEB_APPS.filter((w) => !STREAMING_APPS.some((s) => s.slug === w.id)).map((w): ConsoleGame => ({ id: `app-${w.id}`, title: w.title, tagline: w.detail, genre: "Media", hue: tileHue(w.title), badge: "Free", kind: "app", url: `/app/${w.id}`, installable: true })),
 ];
 export function tileHue(title: string) { return [...title].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0); }
 export const CATALOG: ConsoleGame[] = CLOUD_GAMES.map(g => ({ id: `cloud:${g.url}:${g.name}`, title: g.name, tagline: "Ready when you are.", genre: "Cloud games", hue: tileHue(g.name), badge: "Free", kind: "cloud", url: g.url, cover: siteThumbnail(g.url) }));

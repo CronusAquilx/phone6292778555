@@ -36,6 +36,7 @@ import { Route as ApiProxyRouteImport } from './routes/api/proxy'
 import { Route as ApiSpeechRouteImport } from './routes/api/speech'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiVoiceReplyRouteImport } from './routes/api/voice-reply'
+import { Route as AuthenticatedAppIdRouteImport } from './routes/_authenticated/app.$id'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
@@ -193,6 +194,11 @@ const ApiVoiceReplyRoute = ApiVoiceReplyRouteImport.update({
   path: '/api/voice-reply',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppIdRoute = AuthenticatedAppIdRouteImport.update({
+  id: '/app/$id',
+  path: '/app/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/app/$id': typeof AuthenticatedAppIdRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/console/apps': typeof AuthenticatedConsoleAppsRoute
   '/console/arcade': typeof AuthenticatedConsoleArcadeRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/app/$id': typeof AuthenticatedAppIdRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/console/apps': typeof AuthenticatedConsoleAppsRoute
   '/console/arcade': typeof AuthenticatedConsoleArcadeRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/_authenticated/app/$id': typeof AuthenticatedAppIdRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/_authenticated/console/apps': typeof AuthenticatedConsoleAppsRoute
   '/_authenticated/console/arcade': typeof AuthenticatedConsoleArcadeRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/app/$id'
     | '/chat/$threadId'
     | '/console/apps'
     | '/console/arcade'
@@ -552,6 +562,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/app/$id'
     | '/chat/$threadId'
     | '/console/apps'
     | '/console/arcade'
@@ -603,6 +614,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/_authenticated/app/$id'
     | '/_authenticated/chat/$threadId'
     | '/_authenticated/console/apps'
     | '/_authenticated/console/arcade'
@@ -840,6 +852,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVoiceReplyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/$id': {
+      id: '/_authenticated/app/$id'
+      path: '/app/$id'
+      fullPath: '/app/$id'
+      preLoaderRoute: typeof AuthenticatedAppIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat/': {
       id: '/_authenticated/chat/'
       path: '/chat'
@@ -1010,6 +1029,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
   AuthenticatedWebRoute: typeof AuthenticatedWebRoute
   AuthenticatedYoutubeRoute: typeof AuthenticatedYoutubeRoute
+  AuthenticatedAppIdRoute: typeof AuthenticatedAppIdRoute
   AuthenticatedChatThreadIdRoute: typeof AuthenticatedChatThreadIdRoute
   AuthenticatedConsoleAppsRoute: typeof AuthenticatedConsoleAppsRoute
   AuthenticatedConsoleArcadeRoute: typeof AuthenticatedConsoleArcadeRoute
@@ -1043,6 +1063,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
   AuthenticatedWebRoute: AuthenticatedWebRoute,
   AuthenticatedYoutubeRoute: AuthenticatedYoutubeRoute,
+  AuthenticatedAppIdRoute: AuthenticatedAppIdRoute,
   AuthenticatedChatThreadIdRoute: AuthenticatedChatThreadIdRoute,
   AuthenticatedConsoleAppsRoute: AuthenticatedConsoleAppsRoute,
   AuthenticatedConsoleArcadeRoute: AuthenticatedConsoleArcadeRoute,
