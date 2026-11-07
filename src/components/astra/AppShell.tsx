@@ -5,7 +5,7 @@ import { NowPlayingBar } from "@/components/music/NowPlayingBar";
 import { FocusPrompt, DevicePrompt } from "@/components/FocusPrompt";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Bot, Brain, Film, Gamepad2, Globe, AudioLines, Home, Lock, LogOut, Maximize, Music, Shield, Menu, MessageSquare, Plus, RotateCw, Search, Settings, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Brain, Film, Gamepad2, Globe, AudioLines, Home, Lock, LogOut, Maximize, Music, Youtube, Shield, Menu, MessageSquare, Plus, RotateCw, Search, Settings, Trash2, Users } from "lucide-react";
 import { getAppearance, usePrefs } from "@/lib/astra/prefs";
 import { DesktopDock, DesktopStatusBar } from "./DesktopSurface";
 import { SwitchShell } from "./SwitchSurface";
@@ -127,6 +127,7 @@ const RAIL = [
   { to: "/chat", label: "AI", icon: Bot, f: "ai" },
   { to: "/voice", label: "Voice", icon: AudioLines, f: "ai" },
   { to: "/web", label: "Web", icon: Globe, f: "web" },
+  { to: "/youtube", label: "YouTube", icon: Youtube, f: "all" },
   { to: "/movies", label: "Movies", icon: Film, f: "movies" },
   { to: "/music", label: "Music", icon: Music, f: "music" },
   { to: "/games", label: "Games", icon: Gamepad2, f: "games" },
@@ -143,7 +144,7 @@ function IconRail({ onSearch }: { onSearch: () => void }) {
   const shows = useShows();
   return (
     <aside className="launcher-rail hidden w-14 shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-3 md:flex">
-      {RAIL.filter((r) => shows(r.f)).map((r) => (
+      {RAIL.filter((r) => (r.f === "all" || shows(r.f))).map((r) => (
         <Link key={r.to} to={r.to} title={r.label} aria-label={r.label} className={railLink} activeProps={active}>
           <r.icon className="size-4" />
         </Link>
@@ -235,6 +236,7 @@ function SidebarBody({ onNavigate, onSearch }: { onNavigate: () => void; onSearc
         {shows("all") && <Link to="/home" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Home className="size-4" /> Home</Link>}
         {shows("ai") && <Link to="/voice" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><AudioLines className="size-4" /> Voice</Link>}
         {shows("web") && <Link to="/web" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Globe className="size-4" /> Web</Link>}
+        <Link to="/youtube" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Youtube className="size-4" /> YouTube</Link>
         {shows("movies") && <Link to="/movies" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Film className="size-4" /> Movies</Link>}
         {shows("music") && <Link to="/music" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Music className="size-4" /> Music</Link>}
         {shows("games") && <Link to="/games" onClick={onNavigate} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}><Gamepad2 className="size-4" /> Games</Link>}
@@ -329,6 +331,7 @@ const DESKTOP_COMMANDS = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/games", label: "Games", icon: Gamepad2 },
   { to: "/web", label: "Browser", icon: Globe },
+  { to: "/youtube", label: "YouTube", icon: Youtube },
   { to: "/movies", label: "Movies", icon: Film },
   { to: "/music", label: "Music", icon: Music },
   { to: "/console/social", label: "Friends", icon: Users },

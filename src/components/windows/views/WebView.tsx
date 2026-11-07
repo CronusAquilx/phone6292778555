@@ -17,13 +17,15 @@ type Tab = Snap & { id: number; loading: boolean; back: Snap[]; fwd: Snap[]; non
 let nextId = 1;
 const blank = (): Tab => ({ id: nextId++, title: "New tab", query: "", results: null, url: null, loading: false, back: [], fwd: [], nonce: 0 });
 
-export function WebView({ initialQ }: { initialQ?: string | undefined } = {}) {
+export function WebView({ initialQ, initialSite, proxyOnly = false }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean } = {}) {
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
+  // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
+  const framePrefs = proxyOnly && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
   const native = (prefs.layout === "windows" || prefs.layout === "windows2") || prefs.console === "sony" || prefs.console === "series";
   const [tabs, setTabs] = useState<Tab[]>(() => [blank()]);
   const [active, setActive] = useState(tabs[0]?.id ?? 1);
-  const [input, setInput] = useState(initialQ ?? "");
+  const [input, setInput] = useState(initialSite ?? initialQ ?? "");
   const tab = tabs.find((t) => t.id === active) ?? tabs[0] ?? blank();
   const patch = (id: number, p: Partial<Tab>) => setTabs((ts) => ts.map((t) => {
     if (t.id !== id) return t;
@@ -43,9 +45,10 @@ export function WebView({ initialQ }: { initialQ?: string | undefined } = {}) {
   const navBtn = "rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent";
 
   useEffect(() => {
-    if (initialQ) void go(undefined, initialQ);
+    if (initialSite) patch(tab.id, { url: initialSite, title: "YouTube", query: initialSite });
+    else if (initialQ) void go(undefined, initialQ);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQ]);
+  }, [initialQ, initialSite]);
 
   async function go(e?: React.FormEvent, override?: string) {
     e?.preventDefault();
@@ -54,7 +57,7 @@ export function WebView({ initialQ }: { initialQ?: string | undefined } = {}) {
     const id = tab.id;
     if (/^https?:\/\/\S+$/i.test(q) || /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(q)) {
       const url = q.startsWith("http") ? q : `https://${q}`;
-      if (prefs.openLinksInNewTab) { window.open(url, "_blank", "noopener"); return; }
+      if (prefs.openLinksInNewTab && !proxyOnly) { window.open(url, "_blank", "noopener"); return; }
       patch(id, { url, title: new URL(url).hostname, query: q });
       return;
     }
@@ -110,7 +113,7 @@ export function WebView({ initialQ }: { initialQ?: string | undefined } = {}) {
       </form>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
-          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={prefs} onFail={() => {
+          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onFail={() => {
             if (!/^https?:\/\//i.test(tab.query) && !/^[\w-]+(\.[\w-]+)+/.test(tab.query)) {
               const id = tab.id, q = tab.query;
               patch(id, { url: null, loading: true });
@@ -142,7 +145,7 @@ export function WebView({ initialQ }: { initialQ?: string | undefined } = {}) {
   );
 }
 
-function ProxiedFrame({ url, title, prefs, onFail }: { url: string; title: string; prefs: Prefs; onFail: () => void }) {
+function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean }) {
   const ref = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -158,6 +161,7 @@ function ProxiedFrame({ url, title, prefs, onFail }: { url: string; title: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, prefs.transport, prefs.wisp]);
   if (status === "error") {
+    if (proxyOnly) return <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"><Globe className="size-8"/><p>YouTube couldn’t connect through the proxy.</p><p className="text-sm">Use Reload to try again.</p></div>;
     return (
       <div className="flex h-full flex-col">
         <iframe src={url} title={title} className="w-full flex-1 bg-background" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
@@ -167,7 +171,7 @@ function ProxiedFrame({ url, title, prefs, onFail }: { url: string; title: strin
   }
   return (
     <div className="flex h-full flex-col">
-      <iframe ref={ref} title={title} className="w-full flex-1 bg-background" />
+      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen />
       <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {status === "loading" && "Starting the proxy…"}
         {status === "ready" && "Loaded through the BirchBlock proxy."}

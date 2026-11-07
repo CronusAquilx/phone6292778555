@@ -22,7 +22,7 @@ export const APPS: ConsoleGame[] = [
   { id: "app-web", title: "Web", tagline: "Beyond your home screen.", genre: "Apps", hue: 200, badge: "Included", kind: "app", url: "/web" },
   { id: "app-voice", title: "Voice", tagline: "Talk it through.", genre: "Apps", hue: 310, badge: "Included", kind: "app", url: "/voice" },
   { id: "app-memory", title: "Memory", tagline: "Keep what matters.", genre: "Apps", hue: 85, badge: "Included", kind: "app", url: "/memory" },
-  ...STREAMING_APPS.map((a): ConsoleGame => ({ id: `app-${a.slug}`, title: a.title, tagline: a.tagline, genre: "Media", hue: a.hue, badge: "Free", kind: "app", url: `/console/stream/${a.slug}`, installable: true })),
+  ...STREAMING_APPS.map((a): ConsoleGame => ({ id: `app-${a.slug}`, title: a.title, tagline: a.tagline, genre: "Media", hue: a.hue, badge: a.slug === "youtube" ? "Included" : "Free", kind: "app", url: a.slug === "youtube" ? "/youtube" : `/console/stream/${a.slug}`, installable: a.slug !== "youtube" })),
 ];
 export function tileHue(title: string) { return [...title].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0); }
 export const CATALOG: ConsoleGame[] = CLOUD_GAMES.map(g => ({ id: `cloud:${g.url}:${g.name}`, title: g.name, tagline: "Ready when you are.", genre: "Cloud games", hue: tileHue(g.name), badge: "Free", kind: "cloud", url: g.url, cover: siteThumbnail(g.url) }));

@@ -1,6 +1,7 @@
 export const STORE_APPS = [
   { id: "music", title: "Birch Music", category: "Entertainment", detail: "Your music, playlists and discoveries", tone: "green" },
   { id: "movies", title: "Movies & Anime", category: "Entertainment", detail: "Movies, shows and animation", tone: "coral" },
+  { id: "youtube", title: "YouTube", category: "Entertainment", detail: "Videos, subscriptions and live streams", tone: "coral" },
   { id: "games", title: "Birch Arcade", category: "Gaming", detail: "Arcade and cloud games", tone: "cyan" },
   { id: "web", title: "Birch Browser", category: "Productivity", detail: "Your window to the web", tone: "cyan" },
   { id: "chat", title: "BirchBlock AI", category: "Productivity", detail: "Chat with your personal assistant", tone: "gold" },

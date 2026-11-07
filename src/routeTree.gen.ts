@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedVoiceRouteImport } from './routes/_authenticated/voice'
 import { Route as AuthenticatedWebRouteImport } from './routes/_authenticated/web'
+import { Route as AuthenticatedYoutubeRouteImport } from './routes/_authenticated/youtube'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiGameAiRouteImport } from './routes/api/game-ai'
 import { Route as ApiMoviesRouteImport } from './routes/api/movies'
@@ -140,6 +141,11 @@ const AuthenticatedVoiceRoute = AuthenticatedVoiceRouteImport.update({
 const AuthenticatedWebRoute = AuthenticatedWebRouteImport.update({
   id: '/web',
   path: '/web',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedYoutubeRoute = AuthenticatedYoutubeRouteImport.update({
+  id: '/youtube',
+  path: '/youtube',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -332,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/store': typeof AuthenticatedStoreRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/web': typeof AuthenticatedWebRoute
+  '/youtube': typeof AuthenticatedYoutubeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/game-ai': typeof ApiGameAiRoute
   '/api/movies': typeof ApiMoviesRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/store': typeof AuthenticatedStoreRoute
   '/voice': typeof AuthenticatedVoiceRoute
   '/web': typeof AuthenticatedWebRoute
+  '/youtube': typeof AuthenticatedYoutubeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/game-ai': typeof ApiGameAiRoute
   '/api/movies': typeof ApiMoviesRoute
@@ -432,6 +440,7 @@ export interface FileRoutesById {
   '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/voice': typeof AuthenticatedVoiceRoute
   '/_authenticated/web': typeof AuthenticatedWebRoute
+  '/_authenticated/youtube': typeof AuthenticatedYoutubeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/game-ai': typeof ApiGameAiRoute
   '/api/movies': typeof ApiMoviesRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/voice'
     | '/web'
+    | '/youtube'
     | '/api/chat'
     | '/api/game-ai'
     | '/api/movies'
@@ -532,6 +542,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/voice'
     | '/web'
+    | '/youtube'
     | '/api/chat'
     | '/api/game-ai'
     | '/api/movies'
@@ -582,6 +593,7 @@ export interface FileRouteTypes {
     | '/_authenticated/store'
     | '/_authenticated/voice'
     | '/_authenticated/web'
+    | '/_authenticated/youtube'
     | '/api/chat'
     | '/api/game-ai'
     | '/api/movies'
@@ -756,6 +768,13 @@ declare module '@tanstack/react-router' {
       path: '/web'
       fullPath: '/web'
       preLoaderRoute: typeof AuthenticatedWebRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/youtube': {
+      id: '/_authenticated/youtube'
+      path: '/youtube'
+      fullPath: '/youtube'
+      preLoaderRoute: typeof AuthenticatedYoutubeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
@@ -990,6 +1009,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedVoiceRoute: typeof AuthenticatedVoiceRoute
   AuthenticatedWebRoute: typeof AuthenticatedWebRoute
+  AuthenticatedYoutubeRoute: typeof AuthenticatedYoutubeRoute
   AuthenticatedChatThreadIdRoute: typeof AuthenticatedChatThreadIdRoute
   AuthenticatedConsoleAppsRoute: typeof AuthenticatedConsoleAppsRoute
   AuthenticatedConsoleArcadeRoute: typeof AuthenticatedConsoleArcadeRoute
@@ -1022,6 +1042,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedVoiceRoute: AuthenticatedVoiceRoute,
   AuthenticatedWebRoute: AuthenticatedWebRoute,
+  AuthenticatedYoutubeRoute: AuthenticatedYoutubeRoute,
   AuthenticatedChatThreadIdRoute: AuthenticatedChatThreadIdRoute,
   AuthenticatedConsoleAppsRoute: AuthenticatedConsoleAppsRoute,
   AuthenticatedConsoleArcadeRoute: AuthenticatedConsoleArcadeRoute,

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Bot, Film, Music, Gamepad2 } from "lucide-react";
+import { Bot, Film, Music, Gamepad2, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useClock } from "@/lib/console/ctx";
@@ -18,12 +18,13 @@ import { WebsiteFullscreenButton } from "@/components/FullscreenButton";
 const TABS = [
   { to: "/music", match: "/music", label: "Music", icon: Music },
   { to: "/movies", match: "/movies", label: "Movies", icon: Film },
+  { to: "/youtube", match: "/youtube", label: "YouTube", icon: Youtube },
   { to: "/chat", match: "/chat", label: "AI", icon: Bot },
 ] as const;
 
 /** Console-mode paths that open inside the PS5 media frame instead of the classic sidebar layout. */
 export function isConsoleMediaPath(pathname: string) {
-  return ["/music", "/movies", "/chat", "/web", "/voice", "/memory"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return ["/music", "/movies", "/youtube", "/chat", "/web", "/voice", "/memory"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /** PS5-style frame around Music, Movies and AI while Console Mode is on: no sidebar. */

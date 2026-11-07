@@ -1,5 +1,5 @@
 import { lazy, type ReactNode } from "react";
-import { Bot, Brain, Film, Gamepad2, Globe, Home, LayoutGrid, Mic, Music, Settings, Users } from "lucide-react";
+import { Bot, Brain, Film, Gamepad2, Globe, Home, LayoutGrid, Mic, Music, Settings, Users, Youtube } from "lucide-react";
 import { AccountOnly } from "@/components/astra/SignInRequired";
 import type { DesktopApp, WindowTab } from "@/lib/windows/window-model";
 import { StoreView } from "./views/StoreView";
@@ -10,6 +10,7 @@ const MusicView = lazy(() => import("./views/MusicView").then(m => ({ default: m
 const MoviesView = lazy(() => import("./views/MoviesView").then(m => ({ default: m.MoviesView })));
 const GamesView = lazy(() => import("./views/GamesView").then(m => ({ default: m.GamesView })));
 const WebView = lazy(() => import("./views/WebView").then(m => ({ default: m.WebView })));
+const YouTubeView = lazy(() => import("./views/YouTubeView").then(m => ({ default: m.YouTubeView })));
 const ChatView = lazy(() => import("./views/ChatView").then(m => ({ default: m.ChatView })));
 const MemoryView = lazy(() => import("./views/MemoryView").then(m => ({ default: m.MemoryView })));
 const VoiceView = lazy(() => import("./views/VoiceView").then(m => ({ default: m.VoiceView })));
@@ -23,6 +24,7 @@ export const DESKTOP_APPS = [
   { id: "games", title: "Games", icon: Gamepad2, tone: "green" },
   { id: "web", title: "Browser", icon: Globe, tone: "cyan" },
   { id: "movies", title: "Movies & TV", icon: Film, tone: "coral" },
+  { id: "youtube", title: "YouTube", icon: Youtube, tone: "coral" },
   { id: "music", title: "Music", icon: Music, tone: "green" },
   { id: "chat", title: "BirchBlock AI", icon: Bot, tone: "gold" },
   { id: "social", title: "Friends & parties", icon: Users, tone: "green" },
@@ -47,6 +49,7 @@ export function DesktopAppContent({ tab, onOpen, home, children }: { tab: Window
     case "movies": return <MoviesView/>;
     case "games": return <GamesView initialGame={tab.game}/>;
     case "web": return <WebView/>;
+    case "youtube": return <YouTubeView/>;
     case "chat": return <AccountOnly><ChatView/></AccountOnly>;
     case "memory": return <AccountOnly><MemoryView/></AccountOnly>;
     case "voice": return <AccountOnly><VoiceView/></AccountOnly>;

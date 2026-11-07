@@ -41,14 +41,18 @@ export function SeasonalExperience() {
     const snow = tokens.getPropertyValue("--season-snow").trim();
     const colors = ["--season-leaf-red", "--season-leaf-gold", "--season-leaf-copper"].map(key => tokens.getPropertyValue(key).trim());
     const vein = tokens.getPropertyValue("--season-leaf-vein").trim();
-    const count = season === "christmas" ? Math.min(200, Math.round(width / 7)) : Math.min(52, Math.round(width / 23));
+    const count = season === "christmas" ? Math.min(prefs.perfMode ? 100 : 240, Math.round(width / 5)) : Math.min(prefs.perfMode ? 24 : 60, Math.round(width / 20));
     const points = Array.from({ length: count }, (_, i) => ({ x: Math.random() * width, y: Math.random() * height,
-      size: season === "christmas" ? .9 + Math.random() * 3.2 : 8 + Math.random() * 11,
-      speed: 16 + Math.random() * (season === "christmas" ? 48 : 33), phase: Math.random() * Math.PI * 2,
-      alpha: .22 + Math.random() * .55, kind: i % 3 }));
+      size: season === "christmas" ? 1.2 + Math.random() * 3.8 : 10 + Math.random() * 13,
+      speed: 30 + Math.random() * (season === "christmas" ? 68 : 42), phase: Math.random() * Math.PI * 2,
+      alpha: .5 + Math.random() * .45, kind: i % 3 }));
     const leaf = new Path2D("M0 -1 L.18 -.5 .43 -.72 .4 -.27 .9 -.35 .66 .06 1 .25 .45 .42 .3 .75 0 .6 -.3 .75 -.45 .42 -1 .25 -.66 .06 -.9 -.35 -.4 -.27 -.43 -.72 -.18 -.5 Z");
+    const mediaFullscreen = () => {
+      const full = document.fullscreenElement;
+      return !!full && full !== document.documentElement && full !== document.body && full.id !== "site-content";
+    };
     const draw = (now: number) => {
-      if (document.hidden || document.fullscreenElement) { frame = 0; return; }
+      if (document.hidden || mediaFullscreen()) { frame = 0; return; }
       frame = requestAnimationFrame(draw);
       if (now - previous < 32) return;
       const delta = previous ? Math.min((now - previous) / 1000, .06) : .032;
@@ -61,7 +65,7 @@ export function SeasonalExperience() {
         ctx.save(); ctx.translate(x, p.y); ctx.globalAlpha = p.alpha;
         if (season === "christmas") {
           ctx.fillStyle = snow; ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill();
-          if (p.size > 3) { ctx.globalAlpha = p.alpha * .13; ctx.beginPath(); ctx.arc(0, 0, p.size * 2, 0, Math.PI * 2); ctx.fill(); }
+          // Soft foreground flakes, not glowing orbs.
         } else {
           ctx.rotate(now / 2600 + p.phase); ctx.scale(p.size * (.55 + Math.abs(Math.sin(now / 1800 + p.phase)) * .45), p.size);
           ctx.fillStyle = colors[p.kind] ?? vein; ctx.fill(leaf); ctx.strokeStyle = vein; ctx.lineWidth = .04;
@@ -74,17 +78,14 @@ export function SeasonalExperience() {
     };
     const resume = () => {
       cancelAnimationFrame(frame); frame = 0; previous = 0;
-      if (!document.hidden && !document.fullscreenElement) frame = requestAnimationFrame(draw);
+      if (!document.hidden && !mediaFullscreen()) frame = requestAnimationFrame(draw);
     };
     document.addEventListener("visibilitychange", resume); document.addEventListener("fullscreenchange", resume);
     frame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", resume); document.removeEventListener("fullscreenchange", resume); };
-  }, [season, motion]);
+  }, [season, motion, prefs.perfMode]);
   if (season === "neither") return null;
   return <div className="seasonal-experience" data-season-decoration={season} aria-hidden="true">
     {motion && <canvas ref={canvas} className="seasonal-particles"/>}
-    <div className="seasonal-corner seasonal-corner-left">{season === "christmas" ? "🌲" : "🍂 🥧"}</div>
-    <div className="seasonal-corner seasonal-corner-right">{season === "christmas" ? "🌲" : "🌽 🎃"}</div>
-    {season === "christmas" && <div className="seasonal-snowbank"/>}
   </div>;
 }

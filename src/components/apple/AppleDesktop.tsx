@@ -23,7 +23,7 @@ import ipadWallpaper from "@/assets/ipad-wallpaper.jpg";
 
 type Variant = "macos" | "ipad";
 type Panel = null | "spotlight" | "launchpad" | "control" | "switcher" | "add";
-const DOCK: DesktopApp[] = ["store", "games", "web", "movies", "music", "chat", "social", "settings"];
+const DOCK: DesktopApp[] = ["store", "games", "web", "movies", "youtube", "music", "chat", "social", "settings"];
 let serial = 0;
 const uid = () => `apple-${++serial}`;
 const tabFor = (app: DesktopApp): WindowTab => ({ id: uid(), app, title: desktopAppInfo(app).title });

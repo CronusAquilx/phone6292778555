@@ -1,5 +1,10 @@
 # Birchbeat import roadmap
 
+## Current request — seasonal polish and YouTube
+- [x] Repair visible falling snow/leaves, including low-power and site-fullscreen visibility, and replace heavy recoloring and crude button snow with refined seasonal accents.
+- [x] Add YouTube across all layouts using the existing proxied browser and streaming-capable libcurl transport without changing saved browser preferences.
+- [x] Pass 21 focused checks; confirm moving snow/leaves and the real YouTube home page in one desktop guest flow. Broad playback testing stays user-owned.
+
 ## Current request — seasonal themes
 - [x] Add Christmas, Thanksgiving and Neither above layout choices and in shared Settings.
 - [x] Apply seasonal colors, snow, occasional snowy buttons and harvest leaves across shells and menus without changing saved layout appearances; third-party page interiors remain unchanged.
