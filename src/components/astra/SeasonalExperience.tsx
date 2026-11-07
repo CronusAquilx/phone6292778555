@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { getAppearance, usePrefs } from "@/lib/astra/prefs";
-import { seasonalMotionEnabled, seasonalThemeForPath } from "@/lib/astra/seasonal";
+import { seasonalMotionEnabled, seasonalParticleCount, seasonalThemeForPath } from "@/lib/astra/seasonal";
 
 /** One viewport effect across shells and portals, excluding standalone gameplay. */
 export function SeasonalExperience() {
@@ -12,6 +12,7 @@ export function SeasonalExperience() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [systemReduced, setSystemReduced] = useState(false);
   const motion = seasonalMotionEnabled(look.reduceMotion, prefs.perfMode, systemReduced);
+  const amount = season === "christmas" ? prefs.seasonalSnowAmount : prefs.seasonalLeafAmount;
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setSystemReduced(media.matches);
@@ -26,7 +27,7 @@ export function SeasonalExperience() {
   }, [season]);
   useEffect(() => {
     const node = canvas.current;
-    if (!node || season === "neither" || !motion) return;
+    if (!node || season === "neither" || !motion || amount === 0) return;
     const ctx = node.getContext("2d");
     if (!ctx) return;
     let width = 0, height = 0, frame = 0, previous = 0;
@@ -41,7 +42,7 @@ export function SeasonalExperience() {
     const snow = tokens.getPropertyValue("--season-snow").trim();
     const colors = ["--season-leaf-red", "--season-leaf-gold", "--season-leaf-copper"].map(key => tokens.getPropertyValue(key).trim());
     const vein = tokens.getPropertyValue("--season-leaf-vein").trim();
-    const count = season === "christmas" ? Math.min(prefs.perfMode ? 100 : 240, Math.round(width / 5)) : Math.min(prefs.perfMode ? 24 : 60, Math.round(width / 20));
+    const count = seasonalParticleCount(season, amount, width, prefs.perfMode);
     const points = Array.from({ length: count }, (_, i) => ({ x: Math.random() * width, y: Math.random() * height,
       size: season === "christmas" ? 1.2 + Math.random() * 3.8 : 10 + Math.random() * 13,
       speed: 30 + Math.random() * (season === "christmas" ? 68 : 42), phase: Math.random() * Math.PI * 2,
@@ -83,9 +84,9 @@ export function SeasonalExperience() {
     document.addEventListener("visibilitychange", resume); document.addEventListener("fullscreenchange", resume);
     frame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", resize); document.removeEventListener("visibilitychange", resume); document.removeEventListener("fullscreenchange", resume); };
-  }, [season, motion, prefs.perfMode]);
+  }, [season, motion, prefs.perfMode, amount]);
   if (season === "neither") return null;
   return <div className="seasonal-experience" data-season-decoration={season} aria-hidden="true">
-    {motion && <canvas ref={canvas} className="seasonal-particles"/>}
+    {motion && amount > 0 && <canvas ref={canvas} className="seasonal-particles"/>}
   </div>;
 }

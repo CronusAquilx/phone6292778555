@@ -8,6 +8,8 @@ import { activeLayout, initialAppearance, updateAppearance, type AppearanceLayou
 export type Prefs = {
   homeScreenApps: Record<string, Record<string, boolean>>;
   seasonalTheme: SeasonalTheme;
+  seasonalSnowAmount: number;
+  seasonalLeafAmount: number;
   desktopShortcuts: DesktopShortcut[];
   musicTheme: string;
   musicBarHidden: boolean;
@@ -53,6 +55,8 @@ export type Prefs = {
 export const DEFAULT_PREFS: Prefs = {
   homeScreenApps: {},
   seasonalTheme: "neither",
+  seasonalSnowAmount: 100,
+  seasonalLeafAmount: 100,
   desktopShortcuts: [],
   musicTheme: "midnight-void",
   musicBarHidden: false,
@@ -140,6 +144,7 @@ let revision = 0;
 let accountReady = false;
 let accountLoad: Promise<void> | undefined;
 let visitSeasonalTheme: SeasonalTheme | undefined;
+let visitSeasonalAmounts: Partial<Prefs> = {};
 let saveStatus: "local" | "saving" | "saved" | "error" = "local";
 const statusSubs = new Set<() => void>();
 function status(value: typeof saveStatus) { saveStatus = value; statusSubs.forEach(f => f()); }
@@ -157,7 +162,7 @@ export function activatePreferenceAccount(userId: string | null): Promise<void> 
 async function loadPreferenceAccount(userId: string | null) {
   clearTimeout(saveTimer);
   const generation = ++revision;
-  const selection = { layout: state.layout, console: state.console, ...(visitSeasonalTheme ? { seasonalTheme: visitSeasonalTheme } : {}) };
+  const selection = { layout: state.layout, console: state.console, ...visitSeasonalAmounts, ...(visitSeasonalTheme ? { seasonalTheme: visitSeasonalTheme } : {}) };
   account = userId; accountReady = false; loaded = true;
   let cached: Partial<Prefs> = {};
   if (userId) { try { cached = JSON.parse(localStorage.getItem(`${KEY}:${userId}`) || "{}"); } catch { /* invalid cache */ } }
@@ -280,6 +285,7 @@ export function setPrefs(p: Partial<Prefs>) {
 
 export function resetPrefs() {
   visitSeasonalTheme = undefined;
+  visitSeasonalAmounts = {};
   setPrefs(DEFAULT_PREFS);
 }
 
@@ -287,6 +293,12 @@ export function resetPrefs() {
 export function setSeasonalTheme(seasonalTheme: SeasonalTheme) {
   visitSeasonalTheme = seasonalTheme;
   setPrefs({ seasonalTheme });
+}
+
+export function setSeasonalAmount(season: "christmas" | "thanksgiving", amount: number) {
+  const patch = { [season === "christmas" ? "seasonalSnowAmount" : "seasonalLeafAmount"]: Math.max(0, Math.min(100, amount)) };
+  visitSeasonalAmounts = { ...visitSeasonalAmounts, ...patch };
+  setPrefs(patch);
 }
 
 export function getAppearance(p: Prefs, layout: AppearanceLayout = activeLayout(p)): AppearanceProfile {

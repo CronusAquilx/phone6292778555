@@ -1,5 +1,10 @@
 # Birchbeat import roadmap
 
+## Stable home icons and seasonal particle controls
+- [x] Persist fixed app coordinates across leaving/returning and additions/removals; re-added home icons start in the screen center.
+- [x] Add separately saved snow and leaf amount sliders including Off, without removing the seasonal appearance.
+- [x] 24 focused tests pass, including hook unmount/return, removal/re-add and saved particle amounts; automatic compilation is clean. Brief browser check remained on the opening splash, so live visual interaction remains unverified.
+
 ## Desktop stores and library (Nov 7)
 - [x] Fix app dragging on Windows, macOS and iPad with shared mouse/touch movement and saved positions.
 - [x] Separate App Store from Windows Original Apps and pin both plus Library by default in desktop layouts.

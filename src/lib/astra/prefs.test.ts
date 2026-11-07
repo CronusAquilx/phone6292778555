@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { setPrefs, setAppearance, resetPrefs, getPrefsSnapshot, setSeasonalTheme } from "./prefs";
+import { setPrefs, setAppearance, resetPrefs, getPrefsSnapshot, setSeasonalTheme, setSeasonalAmount } from "./prefs";
 
 describe("persisted appearance switching", () => {
+  it("saves independent snow and leaf amounts without disabling themes", () => {
+    resetPrefs(); setSeasonalTheme("christmas"); setSeasonalAmount("christmas", 0); setSeasonalAmount("thanksgiving", 40);
+    setPrefs({ layout: "macos" });
+    const stored = JSON.parse(localStorage.getItem("astra-prefs") || "{}");
+    expect(stored.seasonalTheme).toBe("christmas");
+    expect(stored.seasonalSnowAmount).toBe(0);
+    expect(stored.seasonalLeafAmount).toBe(40);
+  });
   it("keeps Christmas global across all nine layouts without replacing saved appearance", () => {
     resetPrefs(); setPrefs({ console: "off", layout: "windows" });
     setAppearance("windows", { accent: "aqua", palette: "forest", particles: "fireflies" });
