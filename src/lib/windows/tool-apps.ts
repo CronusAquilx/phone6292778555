@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from "react";
 
-export type ToolCategory = "Utilities" | "Productivity" | "Customize" | "Fun" | "Health" | "Developer";
-export type ToolApp = { id: string; title: string; category: ToolCategory; detail: string; tone: string };
+export type ToolCategory = "Utilities" | "Productivity" | "Customize" | "Fun" | "Health" | "Developer" | "Social" | "Entertainment" | "Gaming";
+/** `url` marks a web app that opens through the proxy in its own app window. */
+export type ToolApp = { id: string; title: string; category: ToolCategory; detail: string; tone: string; url?: string };
 
 /** Downloadable mini apps offered in the Birch Store. */
 export const TOOL_APPS: ToolApp[] = [
@@ -40,7 +41,31 @@ export const TOOL_APPS: ToolApp[] = [
   { id: "screen-info", title: "Device Info", category: "Developer", detail: "Screen, browser and connection", tone: "neutral" },
 ];
 
-export const toolById = (id: string) => TOOL_APPS.find(t => t.id === id);
+/** Web apps: real sites opened through the proxy as their own installable apps. */
+export const WEB_APPS: ToolApp[] = [
+  { id: "twitch", title: "Twitch", category: "Entertainment", detail: "Live streams and gaming", tone: "violet", url: "https://www.twitch.tv/" },
+  { id: "kick", title: "Kick", category: "Entertainment", detail: "Live streaming", tone: "green", url: "https://kick.com/" },
+  { id: "spotify", title: "Spotify", category: "Entertainment", detail: "Music and podcasts", tone: "green", url: "https://open.spotify.com/" },
+  { id: "soundcloud", title: "SoundCloud", category: "Entertainment", detail: "Tracks from independent artists", tone: "coral", url: "https://soundcloud.com/" },
+  { id: "anikoto", title: "Anikoto", category: "Entertainment", detail: "Watch anime", tone: "rose", url: "https://anikoto.cz/" },
+  { id: "crunchyroll", title: "Crunchyroll", category: "Entertainment", detail: "Anime streaming", tone: "coral", url: "https://www.crunchyroll.com/" },
+  { id: "netflix", title: "Netflix", category: "Entertainment", detail: "Movies and series", tone: "rose", url: "https://www.netflix.com/" },
+  { id: "tiktok", title: "TikTok", category: "Entertainment", detail: "Short videos", tone: "neutral", url: "https://www.tiktok.com/" },
+  { id: "discord", title: "Discord", category: "Social", detail: "Chat, voice and servers", tone: "violet", url: "https://discord.com/app" },
+  { id: "reddit", title: "Reddit", category: "Social", detail: "Communities and discussions", tone: "coral", url: "https://www.reddit.com/" },
+  { id: "x", title: "X", category: "Social", detail: "Posts and trends", tone: "neutral", url: "https://x.com/" },
+  { id: "instagram", title: "Instagram", category: "Social", detail: "Photos, reels and stories", tone: "rose", url: "https://www.instagram.com/" },
+  { id: "whatsapp", title: "WhatsApp", category: "Social", detail: "Messages on the web", tone: "green", url: "https://web.whatsapp.com/" },
+  { id: "pinterest", title: "Pinterest", category: "Social", detail: "Ideas and inspiration", tone: "rose", url: "https://www.pinterest.com/" },
+  { id: "github", title: "GitHub", category: "Developer", detail: "Code and repositories", tone: "neutral", url: "https://github.com/" },
+  { id: "wikipedia", title: "Wikipedia", category: "Productivity", detail: "The free encyclopedia", tone: "neutral", url: "https://www.wikipedia.org/" },
+  { id: "duolingo", title: "Duolingo", category: "Productivity", detail: "Learn a language", tone: "green", url: "https://www.duolingo.com/" },
+  { id: "chess", title: "Chess.com", category: "Gaming", detail: "Play chess online", tone: "green", url: "https://www.chess.com/" },
+  { id: "roblox", title: "Roblox", category: "Gaming", detail: "Browse experiences and friends", tone: "neutral", url: "https://www.roblox.com/" },
+];
+
+export const ALL_TOOL_APPS = [...TOOL_APPS, ...WEB_APPS];
+export const toolById = (id: string) => ALL_TOOL_APPS.find(t => t.id === id);
 export const toolAppId = (id: string) => `tool:${id}` as const;
 export const toolFromApp = (app: string) => app.startsWith("tool:") ? toolById(app.slice(5)) : undefined;
 

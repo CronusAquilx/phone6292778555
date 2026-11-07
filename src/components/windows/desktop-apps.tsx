@@ -3,7 +3,7 @@ import { Bot, Brain, Film, Gamepad2, Globe, Home, LayoutGrid, Mic, Music, Settin
 import { AccountOnly } from "@/components/astra/SignInRequired";
 import type { DesktopApp, WindowTab } from "@/lib/windows/window-model";
 import { StoreView } from "./views/StoreView";
-import { TOOL_APPS, toolFromApp, useInstalledTools } from "@/lib/windows/tool-apps";
+import { ALL_TOOL_APPS, toolFromApp, useInstalledTools } from "@/lib/windows/tool-apps";
 const ToolAppView = lazy(() => import("./views/ToolAppView").then(m => ({ default: m.ToolAppView })));
 
 const MusicView = lazy(() => import("./views/MusicView").then(m => ({ default: m.MusicView })));
@@ -37,7 +37,7 @@ export const desktopAppInfo = (id: DesktopApp): DesktopAppInfo => { const t = to
 /** Built-in apps followed by the store apps this person has downloaded. */
 export function useLauncherApps(): DesktopAppInfo[] {
   const installed = useInstalledTools();
-  return [...DESKTOP_APPS, ...TOOL_APPS.filter(t => installed.includes(t.id)).map(t => ({ id: `tool:${t.id}` as DesktopApp, title: t.title, tone: t.tone }))];
+  return [...DESKTOP_APPS, ...ALL_TOOL_APPS.filter(t => installed.includes(t.id)).map(t => ({ id: `tool:${t.id}` as DesktopApp, title: t.title, tone: t.tone }))];
 }
 
 /** Renders one app tab; `home` is the layout's own home screen, `children` the routed page. */
@@ -56,6 +56,6 @@ export function DesktopAppContent({ tab, onOpen, home, children }: { tab: Window
     case "settings": return <SettingsView/>;
     case "social": return <div className="h-full overflow-auto p-4"><SocialHub/></div>;
     case "route": return <>{children}</>;
-    default: return tab.app.startsWith("tool:") ? <ToolAppView id={tab.app.slice(5)}/> : null;
+    default: { const t = toolFromApp(tab.app); if (t?.url) return <WebView key={t.id} initialSite={t.url} proxyOnly app appTitle={t.title}/>; return t ? <ToolAppView id={t.id}/> : null; }
   }
 }

@@ -18,6 +18,8 @@ import { WallpaperEffects } from "@/components/astra/WallpaperEffects";
 import { WallpaperMedia } from "@/components/astra/WallpaperMedia";
 import { DesktopClock, DesktopStatusBar } from "@/components/astra/DesktopSurface";
 import { AppIcon } from "@/components/astra/AppIcon";
+import { toolFromApp } from "@/lib/windows/tool-apps";
+import { useIconOrder } from "@/lib/windows/icon-order";
 import { DESKTOP_APPS, DesktopAppContent, desktopAppInfo, useLauncherApps, type DesktopAppInfo } from "./desktop-apps";
 import { DesktopWidgets } from "@/components/astra/DesktopWidgets";
 import { WebsiteFullscreenButton } from "@/components/FullscreenButton";
@@ -65,6 +67,9 @@ export function WindowsDesktop({ children, desktopOnly = false, modern = false }
     return () => { observer.disconnect(); clearInterval(timer); };
   }, []);
   const launcher = useLauncherApps();
+  const deskApps = launcher.filter(a => (modern ? ["web","youtube","music","games","settings"] : ["store","games","web","youtube","music","movies","settings"]).includes(a.id) || !!toolFromApp(a.id)?.url);
+  const iconOrder = useIconOrder(modern ? "windows2" : "windows", deskApps.map(a => a.id));
+  const orderedDesk = iconOrder.order.map(id => deskApps.find(a => a.id === id)).filter((a): a is DesktopAppInfo => !!a);
   const open = (app: DesktopApp, windowIdOrTitle?: string) => {
     if (app === "music") { setStart(false); setTasks(false); setAddTab(null); setQuery(""); void navigate({ to: "/music" }); return; }
     const existingWindow = state.windows.some(w => w.id === windowIdOrTitle) ? windowIdOrTitle : undefined;
@@ -122,7 +127,7 @@ export function WindowsDesktop({ children, desktopOnly = false, modern = false }
     if (item) return <Windows2ItemEditor item={item} onChange={content => setItems(previous => previous.map(row => row.id === item.id ? { ...row, content } : row))}/>;
     return <DesktopAppContent tab={tab} onOpen={app => open(app)} home={home}>{children}</DesktopAppContent>;
   };
-  const modernIcon = (id: string, title: string, icon: ReactNode, launch: () => void, item?: DesktopItem) => <Button key={id} data-win2-icon={id} data-selected={selectedIcons.includes(id)} variant="ghost" className="windows-shortcut win2-desktop-icon" aria-label={`Open ${title}`} aria-pressed={selectedIcons.includes(id)} onClick={() => setSelectedIcons([id])} onDoubleClick={launch} onKeyDown={event => { if (event.key === "Enter") launch(); }} onContextMenu={event => showContext(event, item?.id)}><span className="win2-desktop-icon-art">{icon}</span><span>{title}</span></Button>;
+  const modernIcon = (id: string, title: string, icon: ReactNode, launch: () => void, item?: DesktopItem, drag?: ReturnType<typeof iconOrder.bind>) => <Button key={id} {...drag} data-win2-icon={id} data-selected={selectedIcons.includes(id)} variant="ghost" className="windows-shortcut win2-desktop-icon" aria-label={`Open ${title}`} aria-pressed={selectedIcons.includes(id)} onClick={() => setSelectedIcons([id])} onDoubleClick={launch} onKeyDown={event => { if (event.key === "Enter") launch(); }} onContextMenu={event => showContext(event, item?.id)}><span className="win2-desktop-icon-art">{icon}</span><span>{title}</span></Button>;
   const beginSelection = (event: ReactPointerEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     // React portal events bubble through this component even when their DOM is outside the workspace.
@@ -162,9 +167,9 @@ export function WindowsDesktop({ children, desktopOnly = false, modern = false }
       {modern ? <div className="win2-desktop-icons" aria-label="Desktop icons">
         {modernIcon("this-pc", "This PC", <HardDrive/>, () => open("home", "This PC"))}
         {modernIcon("recycle-bin", "Recycle Bin", <Trash2/>, openRecycleBin)}
-        {APPS.filter(a => ["web","youtube","music","games","settings"].includes(a.id)).map(app => modernIcon(app.id, app.title, <AppIcon app={app.id}/>, () => open(app.id)))}
+        {orderedDesk.map(app => modernIcon(app.id, app.title, <AppIcon app={app.id}/>, () => open(app.id), undefined, iconOrder.bind(app.id)))}
         {items.map(item => modernIcon(item.id, item.name, item.kind === "folder" ? <Folder/> : <FileText/>, () => openItem(item), item))}
-      </div> : <div className="windows-shortcuts absolute left-3 top-4 flex flex-col gap-2">{APPS.filter(a => ["store","games","web","youtube","music","movies","settings"].includes(a.id)).map(a => <Button key={a.id} variant="ghost" className="windows-shortcut" onClick={() => open(a.id)} aria-label={`Open ${a.title}`}><span className="windows-app-icon" data-tone={a.tone}><AppIcon app={a.id}/></span><span>{a.title}</span></Button>)}</div>}
+      </div> : <div className="windows-shortcuts absolute left-3 top-4 flex flex-col gap-2">{orderedDesk.map(a => <Button key={a.id} {...iconOrder.bind(a.id)} variant="ghost" className="windows-shortcut" onClick={() => open(a.id)} aria-label={`Open ${a.title}`}><span className="windows-app-icon" data-tone={a.tone}><AppIcon app={a.id}/></span><span>{a.title}</span></Button>)}</div>}
       {!modern && <div className="windows-brand pointer-events-none absolute bottom-6 right-7 text-right"><p className="text-sm font-semibold">BirchBlock</p><p className="mt-1 text-xs opacity-70">Windows desktop</p></div>}
       <div className="windows-custom-shortcuts" aria-label="Your desktop shortcuts">{(prefs.desktopShortcuts ?? []).map(shortcut => <div key={shortcut.id} className="group relative"><Button variant="ghost" className="windows-shortcut" onClick={() => launchShortcut(shortcut)} aria-label={`Open ${shortcut.title}`} title={shortcut.title}>{shortcut.image ? <img src={shortcut.image} alt="" className="size-10 rounded object-cover"/> : shortcut.kind === "movie" ? <Film/> : <Gamepad2/>}<span>{shortcut.title}</span></Button><Button variant="secondary" size="icon" className="absolute -right-1 -top-1 size-5 opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={`Remove ${shortcut.title} shortcut`} title="Remove shortcut" onClick={() => removeDesktopShortcut(shortcut.id)}><X className="size-3"/></Button></div>)}</div>
       {!modern && <DesktopWidgets onMusic={() => open("music")}/>}

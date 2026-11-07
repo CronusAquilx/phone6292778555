@@ -275,3 +275,8 @@
 - [x] In-game overlay with FPS, 1% low frame time, ping and memory for cloud (/play) and arcade players; corner move, Shift+F toggle, persisted in prefs.
 - [x] Samples the game frame's own frame rate for same-origin relayed games; host page rate otherwise.
 - [x] 12 perf-monitor/prefs tests pass; full suite 96 passed; browser-verified on Krunker (59 FPS readout, toggle, corner move).
+
+## App store & PiP (Nov 7)
+- [x] Store web apps (Twitch, Discord, GitHub, Kick, Spotify, Anikoto and more) install/open through the proxy.
+- [x] Back, reload, home and picture-in-picture buttons on YouTube and web apps; floating mini player across all layouts.
+- [x] Drag to rearrange desktop icons on Windows, Windows 2.0, macOS and iPad.

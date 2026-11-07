@@ -11,6 +11,7 @@ import { getAppearance, setAppearance, setPrefs, usePrefs } from "@/lib/astra/pr
 import { desktopReducer, makeWindow, type DesktopApp, type DesktopWindow, type WindowTab } from "@/lib/windows/window-model";
 import { DesktopAppContent, desktopAppInfo, useLauncherApps } from "@/components/windows/desktop-apps";
 import { AppIcon } from "@/components/astra/AppIcon";
+import { useIconOrder } from "@/lib/windows/icon-order";
 import { NowPlayingBar } from "@/components/music/NowPlayingBar";
 import { RoomFollower } from "@/components/RoomFollower";
 import { WallpaperEffects } from "@/components/astra/WallpaperEffects";
@@ -70,6 +71,9 @@ export function AppleDesktop({ variant, children }: { variant: Variant; children
   }, []);
 
   const launcher = useLauncherApps();
+  const homeApps = launcher.filter(a => a.id !== "home");
+  const iconOrder = useIconOrder(mac ? "macos" : "ipad", homeApps.map(a => a.id));
+  const orderedHome = iconOrder.order.map(id => homeApps.find(a => a.id === id)).filter((a): a is typeof homeApps[number] => !!a);
   const open = (app: DesktopApp, intoWindow?: string, fresh = false) => {
     setPanel(null); setAddTo(null); setQuery("");
     if (app === "music") { void navigate({ to: "/music" }); return; }
@@ -144,8 +148,9 @@ export function AppleDesktop({ variant, children }: { variant: Variant; children
 
     <div ref={workspace} className="relative min-h-0 flex-1" onPointerDown={e => { if (e.target === e.currentTarget) setPanel(null); }}>
       {!mac && <div className="ipad-home" aria-label="Home screen" onPointerDown={e => { if (e.target === e.currentTarget) setPanel(null); }}>
-        <div className="ipad-home-grid">{launcher.filter(a => a.id !== "home").map(a => <Button key={a.id} variant="ghost" className="apple-grid-app" onClick={() => open(a.id)} aria-label={`Open ${a.title}`}><Tile app={a.id} size="home"/>{look.iconLabels !== false && <span>{a.title}</span>}</Button>)}</div>
+        <div className="ipad-home-grid">{orderedHome.map(a => <Button key={a.id} {...iconOrder.bind(a.id)} variant="ghost" className="apple-grid-app" onClick={() => open(a.id)} aria-label={`Open ${a.title}`}><Tile app={a.id} size="home"/>{look.iconLabels !== false && <span>{a.title}</span>}</Button>)}</div>
       </div>}
+      {mac && <div className="mac-desktop-icons" aria-label="Desktop icons">{orderedHome.map(a => <Button key={a.id} {...iconOrder.bind(a.id)} variant="ghost" className="mac-desktop-icon" onDoubleClick={() => open(a.id)} onKeyDown={e => { if (e.key === "Enter") open(a.id); }} aria-label={`Open ${a.title}`} title="Double-click to open, drag to move"><Tile app={a.id}/><span>{a.title}</span></Button>)}</div>}
       <DesktopWidgets onMusic={() => open("music")}/>
 
       {state.windows.map((w, i) => {

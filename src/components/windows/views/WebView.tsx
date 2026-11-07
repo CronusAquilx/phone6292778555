@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { searchUrl, usePrefs, type Prefs } from "@/lib/astra/prefs";
 import { openProxied } from "@/lib/astra/proxy";
 import { attachProxiedPopups } from "@/lib/astra/proxy-popups";
-import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, Lock, Plus, RotateCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, Lock, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
 import { webSearch } from "@/lib/astra/web.functions";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { nativeVideoPip, openMiniPlayer } from "@/lib/pip";
 
 
 
@@ -17,7 +19,7 @@ type Tab = Snap & { id: number; loading: boolean; back: Snap[]; fwd: Snap[]; non
 let nextId = 1;
 const blank = (): Tab => ({ id: nextId++, title: "New tab", query: "", results: null, url: null, loading: false, back: [], fwd: [], nonce: 0 });
 
-export function WebView({ initialQ, initialSite, proxyOnly = false, app = false }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean; app?: boolean } = {}) {
+export function WebView({ initialQ, initialSite, proxyOnly = false, app = false, appTitle = "YouTube" }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean; app?: boolean; appTitle?: string } = {}) {
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
@@ -45,7 +47,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false 
   const navBtn = "rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent";
 
   useEffect(() => {
-    if (initialSite) patch(tab.id, { url: initialSite, title: "YouTube", query: initialSite });
+    if (initialSite) patch(tab.id, { url: initialSite, title: appTitle, query: initialSite });
     else if (initialQ) void go(undefined, initialQ);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQ, initialSite]);
@@ -85,8 +87,25 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false 
     });
   }
 
+  const frameHost = useRef<HTMLDivElement>(null);
+  const frameEl = () => frameHost.current?.querySelector("iframe") ?? null;
+  const appBack = () => { try { frameEl()?.contentWindow?.history.back(); } catch { step("back"); } };
+  const appReload = () => { try { frameEl()?.contentWindow?.location.reload(); } catch { patch(tab.id, { nonce: tab.nonce + 1 }); } };
+  const appHome = () => { if (initialSite) patch(tab.id, { url: initialSite, title: appTitle, nonce: tab.nonce + 1 }); };
+  const appPip = async () => {
+    if (await nativeVideoPip(frameEl())) return;
+    openMiniPlayer({ url: tab.url ?? initialSite ?? "", title: appTitle });
+    toast(`${appTitle} is in the mini player`, { description: "It keeps going while you use other apps." });
+  };
   return (
     <div className="flex h-full flex-col">
+      {app && <div className="web-app-bar flex items-center gap-0.5 border-b bg-card px-1.5 py-1">
+        <button type="button" onClick={appBack} className={navBtn} aria-label="Back" title="Back"><ArrowLeft className="size-4"/></button>
+        <button type="button" onClick={appReload} className={navBtn} aria-label="Reload" title="Reload"><RotateCw className="size-4"/></button>
+        <button type="button" onClick={appHome} className={navBtn} aria-label={`${appTitle} home`} title="Home"><Home className="size-4"/></button>
+        <span className="ml-1 truncate text-xs font-medium text-muted-foreground">{appTitle}</span>
+        <button type="button" onClick={() => void appPip()} className={cn(navBtn, "ml-auto")} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
+      </div>}
       {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
         <MobileMenuButton />
         {tabs.map((t) => (
@@ -111,7 +130,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false 
         </div>
         {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open in new window"><ExternalLink className="size-4" /></a>}
       </form></>}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={frameHost} className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
           <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onFail={() => {
             if (!/^https?:\/\//i.test(tab.query) && !/^[\w-]+(\.[\w-]+)+/.test(tab.query)) {
@@ -145,7 +164,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false 
   );
 }
 
-function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean }) {
+export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean }) {
   const ref = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -161,7 +180,7 @@ function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; t
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, prefs.transport, prefs.wisp]);
   if (status === "error") {
-    if (proxyOnly) return <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"><Globe className="size-8"/><p>YouTube couldn’t connect through the proxy.</p><p className="text-sm">Use Reload to try again.</p></div>;
+    if (proxyOnly) return <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"><Globe className="size-8"/><p>{title} couldn’t connect through the proxy.</p><p className="text-sm">Use Reload to try again.</p></div>;
     return (
       <div className="flex h-full flex-col">
         <iframe src={url} title={title} className="w-full flex-1 bg-background" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" />
