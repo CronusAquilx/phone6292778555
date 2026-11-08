@@ -83,11 +83,19 @@ async function relayGameSocket(request: Request, url: URL): Promise<Response> {
   const protocol = request.headers.get("sec-websocket-protocol") ?? "";
   const headers: Record<string, string> = { Upgrade: "websocket", "user-agent": "Mozilla/5.0" };
   if (protocol) headers["sec-websocket-protocol"] = protocol;
-  // Photon supports its secure WebSocket endpoint on 443 (verified for NameServer).
-  target.port = "";
-  const res = await fetch(target.href.replace(/^wss/, "https"), { headers });
-  const up = (res as Response & { webSocket?: WS | null }).webSocket;
-  if (!up) return new Response("Upstream refused", { status: 502 });
+  // Keep the server's own port first: Photon master/game servers (e.g. :19090) refuse 443.
+  // Fall back to 443, which the NameServer also accepts, for networks/runtimes that block game ports.
+  const attempts = target.port ? [target.href, Object.assign(new URL(target.href), { port: "" }).href] : [target.href];
+  let res: Response | null = null;
+  let up: WS | null | undefined = null;
+  for (const href of attempts) {
+    try {
+      res = await fetch(href.replace(/^wss/, "https"), { headers });
+      up = (res as Response & { webSocket?: WS | null }).webSocket;
+      if (up) break;
+    } catch { /* try next port */ }
+  }
+  if (!up || !res) return new Response("Upstream refused", { status: 502 });
   up.accept();
   const pair = new WebSocketPair();
   const browser = pair[1];
