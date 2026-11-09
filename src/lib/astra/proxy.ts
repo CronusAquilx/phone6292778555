@@ -48,7 +48,7 @@ async function pickWisp(custom: string): Promise<string> {
 type Controller = import("@mercuryworkshop/scramjet-controller").Controller;
 type Frame = import("@mercuryworkshop/scramjet-controller").Frame;
 
-let cache: { key: string; promise: Promise<Controller> } | null = null;
+const cache = new Map<string, Promise<Controller>>();
 let scriptsPromise: Promise<void> | null = null;
 const frameInitializers = new WeakMap<HTMLIFrameElement, (win: Window) => void>();
 const activeFrames = new WeakMap<HTMLIFrameElement, Frame>();
@@ -147,11 +147,14 @@ async function buildController(transport: Prefs["transport"], custom: string): P
 
 export function getProxyController(prefs: Prefs): Promise<Controller> {
   const key = `${prefs.transport}|${prefs.wisp}`;
-  if (!cache || cache.key !== key) {
-    cache = { key, promise: buildController(prefs.transport, prefs.wisp.trim()) };
-    cache.promise.catch(() => { if (cache?.key === key) cache = null; });
+  // Keep one controller per connection type so sign-in-mode tabs don't tear down regular ones.
+  let promise = cache.get(key);
+  if (!promise) {
+    promise = buildController(prefs.transport, prefs.wisp.trim());
+    cache.set(key, promise);
+    promise.catch(() => { if (cache.get(key) === promise) cache.delete(key); });
   }
-  return cache.promise;
+  return promise;
 }
 
 /** Long movies outlive the browser's idle-worker timeout; re-attach periodically so mid-stream segment fetches keep routing. */

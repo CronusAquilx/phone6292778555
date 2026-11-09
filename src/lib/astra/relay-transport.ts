@@ -3,6 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 type RawHeaders = [string, string][];
 const NULL_BODY = new Set([101, 103, 204, 205, 304]);
 
+/** Sites like Discord only accept live connections sent from their own page origin, not the socket host. */
+export function socketOrigin(url: URL, headers: RawHeaders | Record<string, string> | undefined): string {
+  const list = Array.isArray(headers) ? headers : Object.entries(headers ?? {});
+  const given = list.find(([k]) => k.toLowerCase() === "origin")?.[1];
+  if (given && /^https?:\/\//.test(given) && !given.includes(window.location.host)) return given;
+  if (/(^|\.)discord(app)?\.(gg|com)$/i.test(url.hostname)) return "https://discord.com";
+  if (/(^|\.)tiktok(v)?\.com$/i.test(url.hostname)) return "https://www.tiktok.com";
+  return new URL(url.href.replace(/^ws/, "http")).origin;
+}
+
 /**
  * Proxy transport that sends every request to Astra's own server (/api/proxy),
  * so the browser never contacts the target site or a third-party Wisp server.
@@ -57,7 +67,7 @@ export class AstraRelayTransport {
   }
 
   connect(
-    url: URL, protocols: string[], _h: RawHeaders,
+    url: URL, protocols: string[], reqHeaders: RawHeaders,
     onopen: (p: string, e: string) => void, onmessage: (d: unknown) => void,
     onclose: (code: number, reason: string) => void, onerror: (e: string) => void,
   ): [(d: unknown) => void, (code: number, reason: string) => void] {
@@ -66,7 +76,7 @@ export class AstraRelayTransport {
     const pending: unknown[] = [];
     void supabase.auth.getSession().then(({ data }) => {
       const loc = window.location;
-      const q = new URLSearchParams({ url: url.href, protocols: (protocols ?? []).join(","), origin: new URL(url.href.replace(/^ws/, "http")).origin, token: data.session?.access_token ?? "" });
+      const q = new URLSearchParams({ url: url.href, protocols: (protocols ?? []).join(","), origin: socketOrigin(url, reqHeaders), token: data.session?.access_token ?? "" });
       ws = new WebSocket(`${loc.protocol === "https:" ? "wss" : "ws"}://${loc.host}/api/proxy-ws?${q}`);
       ws.binaryType = "arraybuffer";
       ws.onmessage = (e) => {

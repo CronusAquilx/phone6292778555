@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { searchUrl, usePrefs, type Prefs } from "@/lib/astra/prefs";
 import { openProxied } from "@/lib/astra/proxy";
 import { attachProxiedPopups } from "@/lib/astra/proxy-popups";
-import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, Lock, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, KeyRound, Lock, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
 import { webSearch } from "@/lib/astra/web.functions";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { nativeVideoPip, openMiniPlayer } from "@/lib/pip";
+import { setSignInMode, signInModeOn } from "@/lib/astra/signin-mode";
 
 
 
@@ -23,12 +24,22 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
-  const framePrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
+  const ytPrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
   const native = (prefs.layout === "windows" || prefs.layout === "windows2") || prefs.console === "sony" || prefs.console === "series";
   const [tabs, setTabs] = useState<Tab[]>(() => [blank()]);
   const [active, setActive] = useState(tabs[0]?.id ?? 1);
   const [input, setInput] = useState(initialSite ?? initialQ ?? "");
   const tab = tabs.find((t) => t.id === active) ?? tabs[0] ?? blank();
+  const [, bumpSignIn] = useState(0);
+  const signIn = signInModeOn(tab.url);
+  const framePrefs = signIn && ytPrefs.transport === "astra" ? { ...ytPrefs, transport: "epoxy" as const } : ytPrefs;
+  const toggleSignIn = () => {
+    setSignInMode(tab.url, !signIn);
+    bumpSignIn((n) => n + 1);
+    patch(tab.id, { nonce: tab.nonce + 1 });
+    toast(!signIn ? "Sign-in mode on" : "Sign-in mode off", { description: !signIn ? "This site now uses a separate secure connection that logins and captchas accept more often." : "Back to the regular proxy connection." });
+  };
+  const signInBtn = (cls: string) => tab.url ? <button type="button" onClick={toggleSignIn} className={cn(cls, signIn && "bg-accent text-foreground")} aria-pressed={signIn} aria-label="Sign-in mode" title={signIn ? "Sign-in mode is on — tap to use the regular connection" : "Sign-in mode — use if logins or captchas fail"}><KeyRound className="size-4"/></button> : null;
   const patch = (id: number, p: Partial<Tab>) => setTabs((ts) => ts.map((t) => {
     if (t.id !== id) return t;
     const nav = ("url" in p || "results" in p) && !("back" in p) && (t.url || t.results);
@@ -104,7 +115,9 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
         <button type="button" onClick={appReload} className={navBtn} aria-label="Reload" title="Reload"><RotateCw className="size-4"/></button>
         <button type="button" onClick={appHome} className={navBtn} aria-label={`${appTitle} home`} title="Home"><Home className="size-4"/></button>
         <span className="ml-1 truncate text-xs font-medium text-muted-foreground">{appTitle}</span>
-        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={cn(navBtn, "ml-auto")} aria-label="Open directly (for sign-in and captchas)" title="Open directly — use for sign-in and captchas"><ExternalLink className="size-4"/></a>}
+        <span className="ml-auto"/>
+        {signInBtn(navBtn)}
+        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open directly (for sign-in and captchas)" title="Open directly — use for sign-in and captchas"><ExternalLink className="size-4"/></a>}
         <button type="button" onClick={() => void appPip()} className={navBtn} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
       </div>}
       {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
@@ -129,6 +142,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
           <input value={input} onChange={(e) => setInput(e.target.value)} onFocus={(e) => e.target.select()} placeholder="Search or type a URL"
             className="flex-1 bg-transparent text-sm outline-none" />
         </div>
+        {signInBtn(navBtn)}
         {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open in new window"><ExternalLink className="size-4" /></a>}
       </form></>}
       <div ref={frameHost} className="min-h-0 flex-1 overflow-y-auto">
@@ -194,7 +208,7 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: st
       <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share" allowFullScreen />
       <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {status === "loading" && "Starting the proxy…"}
-        {status === "ready" && "Loaded through the BirchBlock proxy."}
+        {status === "ready" && (prefs.transport === "astra" ? "Loaded through the BirchBlock proxy." : "Loaded through the secure sign-in connection.")}
       </p>
     </div>
   );

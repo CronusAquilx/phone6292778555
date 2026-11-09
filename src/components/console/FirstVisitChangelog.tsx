@@ -15,7 +15,8 @@ const additions = [
 const fixes = [
   "Movie sources switch to the next one faster when one stalls",
   "Anikoto now opens anikoto.ro",
-  "Web apps get an Open directly button for sign-ins and captchas that block proxies",
+  "New Sign-in mode (key button) for Discord, TikTok, FanDuel and other account sites — on by default for them",
+  "Discord QR-code login now connects with the right site identity",
   "BuildNow GG arcade connections to multiplayer game servers",
   "Full-song YouTube lookup before Music uses a 30-second preview",
   "More reliable web apps through the full-site proxy",
