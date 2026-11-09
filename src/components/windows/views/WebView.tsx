@@ -225,7 +225,7 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly, onConnectio
   }
   return (
     <div className="flex h-full flex-col">
-      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share" allowFullScreen />
+      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share; geolocation" allowFullScreen />
       <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {status === "loading" && "Starting the proxy…"}
         {status === "ready" && (prefs.transport === "astra" ? "Loaded through the BirchBlock proxy." : "Loaded through the secure sign-in connection.")}
