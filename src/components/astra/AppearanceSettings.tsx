@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import landscape from "@/assets/console-landscape.jpg";
 import { WallpaperUpload } from "./WallpaperUpload";
 import { MusicUpload } from "./MusicUpload";
+import { WatchModeSetting } from "./WatchModeSetting";
 import classicWallpaper from "@/assets/launcher-wallpaper.jpg";
 import windowsWallpaper from "@/assets/windows-wallpaper.jpg";
 import alpineWallpaper from "@/assets/alpine-wallpaper.jpg";
@@ -50,6 +51,7 @@ export function AppearanceSettings() {
     <Setting label="Accent color"><div className="flex max-w-72 flex-wrap gap-2">{Object.keys(ACCENTS).map(id => <Button key={id} variant="ghost" size="icon" aria-label={`${id === "star" ? "Native" : id} accent`} title={id === "star" ? "Native accent" : id} aria-pressed={!look.customAccent && look.accent === id} onClick={() => set({ accent: id as AppearanceProfile["accent"], customAccent: "" })} className={cn("appearance-swatch size-8 rounded-full border",!look.customAccent && look.accent === id && "ring-2 ring-foreground ring-offset-2 ring-offset-background")} data-swatch={id}>{!look.customAccent && look.accent === id && <Check className="size-3"/>}</Button>)}<Input type="color" aria-label="Custom accent color" title="Custom accent color" value={look.customAccent || "#55bbcc"} onChange={e => set({ customAccent: e.target.value })} className="size-9 cursor-pointer p-1"/></div></Setting>
     <Setting label="PNG / GIF background"><WallpaperUpload key={layout} layout={layout}/></Setting>
     <Setting label="MP3 music"><MusicUpload key={`music-${layout}`}/></Setting>
+    <Setting label="Movies location"><WatchModeSetting/></Setting>
     <WallpaperCatalog key={`catalog-${layout}`} layout={layout}/>
     {!consoleMode && <div className="grid grid-cols-2 gap-3 border-b py-4 sm:grid-cols-4">{[{name:"Classic lake",url:classicWallpaper,type:"image" as const,preview:classicWallpaper},{name:"Windows waves",url:windowsWallpaper,type:"image" as const,preview:windowsWallpaper},{name:"Alpine daylight",url:alpineWallpaper,type:"image" as const,preview:alpineWallpaper},{name:"Alpine motion",url:alpineMotion.url,type:"video" as const,preview:alpineWallpaper}].map(item=><Button key={item.name} variant="ghost" className="h-auto flex-col gap-2 p-1" aria-label={`Use ${item.name} wallpaper`} onClick={()=>set({customBg:item.url,wallpaperType:item.type,artwork:true})}><img src={item.preview} alt="" loading="lazy" width={160} height={90} className="aspect-video w-full rounded object-cover"/><span className="text-xs">{item.name}</span></Button>)}</div>}
 

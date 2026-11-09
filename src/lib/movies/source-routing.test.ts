@@ -4,10 +4,11 @@ import { STREAMING_SERVERS } from "./tmdb";
 import { anikotoSearchUrl, animeIcuVoiceUrl, animeVoiceUrl } from "./anime-sources";
 
 describe("imported movie source routing", () => {
-  it("lists all twenty external sources, eight under New Sources", () => {
-    expect(STREAMING_SERVERS).toHaveLength(20);
-    expect(new Set(STREAMING_SERVERS.map(source => source.id)).size).toBe(20);
-    expect(STREAMING_SERVERS.filter(source => source.category === "sources")).toHaveLength(8);
+  it("lists eleven external sources, fastest first, keeping school-safe APIPlayer", () => {
+    expect(STREAMING_SERVERS).toHaveLength(11);
+    expect(new Set(STREAMING_SERVERS.map(source => source.id)).size).toBe(11);
+    expect(STREAMING_SERVERS[0]?.id).toBe("vidlink");
+    expect(STREAMING_SERVERS.some(source => source.id === "apiplayer")).toBe(true);
     for (const source of STREAMING_SERVERS) {
       expect(new URL(source.url(550, "movie")).protocol).toBe("https:");
       expect(source.url(550, "movie")).not.toContain("movie-unavailable");
@@ -21,6 +22,6 @@ describe("imported movie source routing", () => {
   it("keeps anime source identifiers and dubbed voice choices separate", () => {
     expect(animeVoiceUrl(21, 4, "en")).toBe("https://vidlink.pro/anime/21/4/dub");
     expect(animeIcuVoiceUrl(21, 4, "ja")).toBe("https://vidsrc.icu/embed/anime/21/4/0");
-    expect(new URL(anikotoSearchUrl("One Piece")).searchParams.get("s")).toBe("One Piece");
+    expect(new URL(anikotoSearchUrl("One Piece")).searchParams.get("keyword")).toBe("One Piece");
   });
 });

@@ -6,8 +6,15 @@ export function supportsAnimationSources(detail: { genres?: { id: number }[]; ge
 
 /** Anikoto's actual site search, not an invented embed/audio API. */
 export function anikotoSearchUrl(title: string): string {
-  const url = new URL('https://anikoto.com.co/');
-  url.searchParams.set('s', title.trim());
+  const url = new URL('https://anikoto.ro/search');
+  url.searchParams.set('keyword', title.trim());
+  return url.toString();
+}
+
+/** HiAnime's real site search, opened through the proxy. */
+export function hianimeSearchUrl(title: string): string {
+  const url = new URL('https://hianime.to/search');
+  url.searchParams.set('keyword', title.trim());
   return url.toString();
 }
 

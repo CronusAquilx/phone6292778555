@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { ConsoleShell } from "./ConsoleShell";
 
 const additions = [
+  "New working movie sources, ordered fastest first, plus a HiAnime anime source",
+  "Home / At school choice for Movies in Personalization",
+  "PNG/GIF backgrounds and MP3 imports in Personalization",
   "Christmas and Thanksgiving themes with adjustable snow and falling leaves",
   "A separate App Store, Windows Original Apps store, and owned-app Library",
   "Movable desktop apps that keep their place across visits",
@@ -10,6 +13,9 @@ const additions = [
 ];
 
 const fixes = [
+  "Movie sources switch to the next one faster when one stalls",
+  "Anikoto now opens anikoto.ro",
+  "Web apps get an Open directly button for sign-ins and captchas that block proxies",
   "BuildNow GG arcade connections to multiplayer game servers",
   "Full-song YouTube lookup before Music uses a 30-second preview",
   "More reliable web apps through the full-site proxy",

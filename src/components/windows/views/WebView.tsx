@@ -104,7 +104,8 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
         <button type="button" onClick={appReload} className={navBtn} aria-label="Reload" title="Reload"><RotateCw className="size-4"/></button>
         <button type="button" onClick={appHome} className={navBtn} aria-label={`${appTitle} home`} title="Home"><Home className="size-4"/></button>
         <span className="ml-1 truncate text-xs font-medium text-muted-foreground">{appTitle}</span>
-        <button type="button" onClick={() => void appPip()} className={cn(navBtn, "ml-auto")} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
+        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={cn(navBtn, "ml-auto")} aria-label="Open directly (for sign-in and captchas)" title="Open directly — use for sign-in and captchas"><ExternalLink className="size-4"/></a>}
+        <button type="button" onClick={() => void appPip()} className={navBtn} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
       </div>}
       {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
         <MobileMenuButton />
