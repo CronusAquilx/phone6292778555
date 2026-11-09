@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { searchUrl, usePrefs, type Prefs } from "@/lib/astra/prefs";
 import { openProxied } from "@/lib/astra/proxy";
 import { attachProxiedPopups } from "@/lib/astra/proxy-popups";
-import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, KeyRound, Lock, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, KeyRound, Lock, MapPin, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
 import { webSearch } from "@/lib/astra/web.functions";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,25 @@ type Result = { title: string; url: string; snippet: string };
 type Snap = { title: string; query: string; results: Result[] | null; url: string | null };
 type Tab = Snap & { id: number; loading: boolean; back: Snap[]; fwd: Snap[]; nonce: number };
 let nextId = 1;
+/** Opens the site in its own browser tab, still through the proxy. */
+export function openSiteTab(url: string, name: string) {
+  const q = new URLSearchParams({ site: "1", url, name });
+  window.open(`/play?${q.toString()}`, "_blank");
+}
+
+/**
+ * Asks the browser for location from the top-level page so the "Allow location?" prompt shows;
+ * proxied sites share this page's origin, so they get the permission once it's granted.
+ */
+export function requestLocation() {
+  if (!navigator.geolocation) { toast("Location isn't available in this browser."); return; }
+  navigator.geolocation.getCurrentPosition(
+    () => toast("Location shared", { description: "Reload the site if it still asks for your location." }),
+    (err) => toast("Location blocked", { description: err.code === err.PERMISSION_DENIED ? "Your browser blocked location. Click the lock or site icon next to the address bar, allow Location, then try again. In the editor preview, open the site in its own tab first." : "Your location couldn't be found. Try again." }),
+    { enableHighAccuracy: true, timeout: 15000 },
+  );
+}
+
 const blank = (): Tab => ({ id: nextId++, title: "New tab", query: "", results: null, url: null, loading: false, back: [], fwd: [], nonce: 0 });
 
 export function WebView({ initialQ, initialSite, proxyOnly = false, app = false, appTitle = "YouTube" }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean; app?: boolean; appTitle?: string } = {}) {
@@ -120,7 +139,8 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
         <span className="ml-1 truncate text-xs font-medium text-muted-foreground">{appTitle}</span>
         <span className="ml-auto"/>
         {signInBtn(navBtn)}
-        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open directly (for sign-in and captchas)" title="Open directly — use for sign-in and captchas"><ExternalLink className="size-4"/></a>}
+        {tab.url && <button type="button" onClick={requestLocation} className={navBtn} aria-label="Share my location" title="Share my location with this site"><MapPin className="size-4"/></button>}
+        {tab.url && <button type="button" onClick={() => openSiteTab(tab.url!, appTitle)} className={navBtn} aria-label="Open in a new tab" title="Open in a new tab (still through the proxy)"><ExternalLink className="size-4"/></button>}
         <button type="button" onClick={() => void appPip()} className={navBtn} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
       </div>}
       {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
@@ -146,7 +166,8 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
             className="flex-1 bg-transparent text-sm outline-none" />
         </div>
         {signInBtn(navBtn)}
-        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open in new window"><ExternalLink className="size-4" /></a>}
+        {tab.url && <button type="button" onClick={requestLocation} className={navBtn} aria-label="Share my location" title="Share my location with this site"><MapPin className="size-4"/></button>}
+        {tab.url && <button type="button" onClick={() => openSiteTab(tab.url!, tab.title)} className={navBtn} aria-label="Open in a new tab" title="Open in a new tab (still through the proxy)"><ExternalLink className="size-4" /></button>}
       </form></>}
       <div ref={frameHost} className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
