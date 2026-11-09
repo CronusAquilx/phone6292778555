@@ -1,5 +1,10 @@
 # Birchbeat import roadmap
 
+## First-visit changelog
+- [x] Show current features and fixes before layout selection.
+- [x] Remember dismissal per device and changelog version; standalone gameplay and proxied pages bypass it.
+- [x] Thirteen focused storage/gate/opening-flow checks pass; automatic compilation is clean. The local browser remained on the pre-existing opening loading screen, so live visual inspection remains user-owned.
+
 ## Arcade BuildNow GG matchmaking
 - [x] Repair Worker Blob-to-text corruption in both binary socket relays and add the missing preview arcade upgrade handler; cloud launches remain unchanged.
 - [x] 15 focused tests pass and compilation is clean. Arcade BuildNow GG reaches ConnectedToMasterServer in the preview with a populated lobby and enabled Play button; completed matches and the unpublished production repair remain unverified.

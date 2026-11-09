@@ -1269,6 +1269,27 @@ html[data-dock-motion="on"] [data-apple="macos"] .apple-dock-item:has(+ .apple-d
 @media (max-width: 760px) { .layout-chooser { padding: 18px 20px; gap: 24px; }.layout-choice-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }.layout-chooser-heading { margin-bottom: 20px; }.layout-choice-label { font-size: 12px; padding-left: 3px; padding-right: 3px; }.layout-choice-simple { grid-template-columns: repeat(2,minmax(0,1fr)); }.layout-chooser-content { margin: 0 auto; }.layout-step-mark { font-size: 18px; } }
 @media (prefers-reduced-motion: reduce) { .layout-chooser *, .wallpaper-browser * { animation: none !important; transition: none !important; }.layout-chooser .layout-choice.is-highlighted, .wallpaper-tile:hover, .wallpaper-tile:hover img { transform: none; } }
 
+/* First-visit release notes precede layout selection and are remembered per device/version. */
+.changelog-screen { justify-content: space-between; }
+.changelog-version { color: color-mix(in oklch,var(--console-foreground) 55%,transparent); font-size: 12px; }
+.changelog-card { width: min(900px,100%); margin: auto; padding: clamp(24px,4vw,44px); border: 1px solid var(--chooser-edge); border-radius: 20px; background: color-mix(in oklch,var(--console-panel) 78%,transparent); box-shadow: var(--chooser-shadow); backdrop-filter: blur(24px); animation: chooser-content-in .45s ease both; }
+.changelog-intro { display: flex; align-items: flex-start; gap: 20px; padding-bottom: 28px; border-bottom: 1px solid var(--chooser-edge); }
+.changelog-symbol { display: grid; place-items: center; flex: 0 0 auto; width: 52px; height: 52px; border: 1px solid color-mix(in oklch,var(--chooser-highlight) 35%,transparent); border-radius: 14px; background: color-mix(in oklch,var(--chooser-highlight) 12%,transparent); color: var(--chooser-highlight); }
+.changelog-symbol svg { width: 24px; height: 24px; }
+.changelog-eyebrow { margin-bottom: 8px; color: var(--chooser-highlight); font-size: 11px; font-weight: 600; letter-spacing: .14em; }
+.changelog-intro h1 { margin-bottom: 8px; font-family: "Outfit",var(--font-sans); font-size: clamp(28px,4vw,42px); font-weight: 500; letter-spacing: -.035em; }
+.changelog-intro p:last-child { max-width: 560px; color: color-mix(in oklch,var(--console-foreground) 60%,transparent); font-size: 14px; line-height: 1.6; }
+.changelog-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 36px; padding: 28px 0; }
+.changelog-columns h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 14px; font-weight: 600; }
+.changelog-columns h2 svg { width: 17px; height: 17px; color: var(--chooser-highlight); }
+.changelog-columns ul { display: grid; gap: 14px; }
+.changelog-columns li { display: flex; align-items: flex-start; gap: 10px; color: color-mix(in oklch,var(--console-foreground) 72%,transparent); font-size: 13px; line-height: 1.5; }
+.changelog-columns li svg { flex: 0 0 auto; width: 14px; height: 14px; margin-top: 3px; color: var(--desktop-green); }
+.changelog-action { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 24px; border-top: 1px solid var(--chooser-edge); }
+.changelog-action p { color: color-mix(in oklch,var(--console-foreground) 48%,transparent); font-size: 12px; }
+.changelog-action button { background: var(--chooser-highlight); color: var(--console-background); }
+@media (max-width: 680px) { .changelog-card { padding: 22px; border-radius: 16px; }.changelog-intro { gap: 14px; }.changelog-symbol { width: 42px; height: 42px; }.changelog-columns { grid-template-columns: 1fr; gap: 24px; }.changelog-action { align-items: stretch; flex-direction: column; }.changelog-action button { width: 100%; }.changelog-version { display: none; } }
+
 /* Windows 2.0: Windows 11 desktop composition, isolated from the original Windows layout. */
 .windows2-desktop { --win2-mica: color-mix(in oklch, var(--card) 88%, transparent); --win2-edge: color-mix(in oklch, var(--foreground) 14%, transparent); font-family: "Segoe UI", var(--font-sans); }
 .windows2-desktop::before { display: none; }
