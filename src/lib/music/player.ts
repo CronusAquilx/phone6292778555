@@ -5,7 +5,7 @@ import type { Prefs } from "@/lib/astra/prefs";
 import { nextQueueIndex } from "./qaisify";
 import { searchMusic, searchPreviews } from "./client-search";
 
-export type Track = { id: string; title: string; artist: string; artistId: string; album: string; albumId: string; art: string; duration: number; preview?: string; source?: "piped" | "itunes" };
+export type Track = { id: string; title: string; artist: string; artistId: string; album: string; albumId: string; art: string; duration: number; preview?: string; source?: "piped" | "itunes" | "local" };
 export const SERVERS = [
   { id: "youtube", name: "YouTube · Qaisify" }, { id: "auto", name: "Auto · audio sources" },
   { id: "saavn", name: "JioSaavn" }, { id: "piped", name: "Piped" }, { id: "soundcloud", name: "SoundCloud" },
@@ -186,6 +186,13 @@ export async function playList(list: Track[], i: number) {
   set({ queue: list, cur: i, status: "Finding your song…", paused: true, loading: true, time: 0, dur: t.duration, mode: null, fallbackId: null });
   audio.playbackRate = state.speed;
   try {
+    if (t.source === "local" && t.preview) {
+      audio.src = t.preview;
+      set({ mode: "audio", dur: t.duration, status: "Imported MP3" });
+      await audio.play();
+      if (my === playId) set({ loading: false, paused: false });
+      return;
+    }
     const ids = t.source === "piped" && !t.preview && /^[\w-]{11}$/.test(t.id) ? [t.id] : await fullSongCandidates(t, signal);
     if (my !== playId || signal.aborted) return;
     if (!ids.length) { await audioFallback(t, my); return; }
