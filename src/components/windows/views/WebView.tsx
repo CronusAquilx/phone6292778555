@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { nativeVideoPip, openMiniPlayer } from "@/lib/pip";
-import { setSignInMode, signInModeOn } from "@/lib/astra/signin-mode";
+import { setSignInMode, signInModeOn, siteKey } from "@/lib/astra/signin-mode";
 
 
 
@@ -31,10 +31,13 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   const [input, setInput] = useState(initialSite ?? initialQ ?? "");
   const tab = tabs.find((t) => t.id === active) ?? tabs[0] ?? blank();
   const [, bumpSignIn] = useState(0);
-  const signIn = signInModeOn(tab.url);
+  // Sites the sign-in connection can't reach this visit fall back to the regular one.
+  const [unreachable, setUnreachable] = useState<Set<string>>(() => new Set());
+  const signIn = signInModeOn(tab.url) && !unreachable.has(siteKey(tab.url));
   const framePrefs = signIn && ytPrefs.transport === "astra" ? { ...ytPrefs, transport: "epoxy" as const } : ytPrefs;
   const toggleSignIn = () => {
     setSignInMode(tab.url, !signIn);
+    setUnreachable((u) => { const n = new Set(u); n.delete(siteKey(tab.url)); return n; });
     bumpSignIn((n) => n + 1);
     patch(tab.id, { nonce: tab.nonce + 1 });
     toast(!signIn ? "Sign-in mode on" : "Sign-in mode off", { description: !signIn ? "This site now uses a separate secure connection that logins and captchas accept more often." : "Back to the regular proxy connection." });
@@ -147,7 +150,11 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
       </form></>}
       <div ref={frameHost} className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
-          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onFail={() => {
+          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onConnectionFail={signIn ? () => {
+            const key = siteKey(tab.url);
+            setUnreachable((u) => new Set(u).add(key));
+            toast("Switched to the regular connection", { description: `${key} blocks the sign-in connection, so it now loads the usual way.` });
+          } : undefined} onFail={() => {
             if (!/^https?:\/\//i.test(tab.query) && !/^[\w-]+(\.[\w-]+)+/.test(tab.query)) {
               const id = tab.id, q = tab.query;
               patch(id, { url: null, loading: true });
@@ -179,7 +186,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   );
 }
 
-export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean }) {
+export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly, onConnectionFail }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean; onConnectionFail?: (() => void) | undefined }) {
   const ref = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -188,10 +195,23 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: st
     const frame = ref.current;
     if (!frame) return;
     const detach = attachProxiedPopups(frame, url, prefs);
+    let watch: ReturnType<typeof setInterval> | undefined;
     openProxied(frame, url, prefs)
-      .then(() => { if (!cancelled) setStatus("ready"); })
+      .then(() => {
+        if (cancelled) return;
+        setStatus("ready");
+        if (!onConnectionFail) return;
+        // The proxy worker shows this page when the tunnel can't reach the site at all.
+        let checks = 0;
+        watch = setInterval(() => {
+          let text = "";
+          try { text = frame.contentDocument?.body?.innerText ?? ""; } catch { /* cross-origin */ }
+          if (/^Internal Service Worker Error/.test(text.trim())) { clearInterval(watch); if (!cancelled) onConnectionFail(); }
+          else if (++checks > 20) clearInterval(watch);
+        }, 1000);
+      })
       .catch(() => { if (!cancelled) { setStatus("error"); onFail(); } });
-    return () => { cancelled = true; detach(); };
+    return () => { cancelled = true; if (watch) clearInterval(watch); detach(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, prefs.transport, prefs.wisp]);
   if (status === "error") {

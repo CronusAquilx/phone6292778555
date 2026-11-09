@@ -15,7 +15,8 @@ const additions = [
 const fixes = [
   "Movie sources switch to the next one faster when one stalls",
   "Anikoto now opens anikoto.ro",
-  "New Sign-in mode (key button) for Discord, TikTok, FanDuel and other account sites — on by default for them",
+  "Browser and web apps now use a secure sign-in connection by default — Google search no longer shows the robot check",
+  "Sites that refuse that connection switch back to the regular one automatically",
   "Discord QR-code login now connects with the right site identity",
   "BuildNow GG arcade connections to multiplayer game servers",
   "Full-song YouTube lookup before Music uses a 30-second preview",

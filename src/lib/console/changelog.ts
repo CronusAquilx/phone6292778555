@@ -1,4 +1,4 @@
-export const CURRENT_CHANGELOG_VERSION = "2026-11-09c";
+export const CURRENT_CHANGELOG_VERSION = "2026-11-09d";
 
 const storageKey = (version: string) => `birch-changelog-seen:${version}`;
 
