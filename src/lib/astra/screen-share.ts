@@ -7,6 +7,15 @@ const MAX_ITEMS = 650;
 const transparent = (v: string) => !v || v === "transparent" || v === "rgba(0, 0, 0, 0)";
 
 const MAX_MEDIA = 3;
+/** JPEGs have no transparency, so a see-through page background would render black; find the first solid colour instead. */
+function solidBg(): string {
+  const list: Element[] = [];
+  let n: Element | null = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+  while (n) { list.push(n); n = n.parentElement; }
+  list.push(document.body, document.documentElement);
+  for (const e of list) { const c = getComputedStyle(e).backgroundColor; if (!transparent(c)) return c; }
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "#0d0d12" : "#ffffff";
+}
 const SHOT_W = 960;
 let shotCanvas: HTMLCanvasElement | null = null;
 
@@ -67,7 +76,7 @@ export function captureFrame(): ScreenFrame {
   const w = window.innerWidth, h = window.innerHeight;
   const items: ScreenItem[] = [];
   walkDoc(document, 0, 0, w, h, items, 0);
-  return { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor, items };
+  return { w, h, path: location.pathname, bg: solidBg(), items };
 }
 
 /** Draws same-origin pages (proxied web browser, arcade wrappers) as boxes/text, offset into the parent screen. */
@@ -124,6 +133,8 @@ function innerDoc(el: HTMLElement): Document | null {
 
 let captureWarningShown = false;
 
+let subAt = 0;
+let subCache: ScreenItem[] = [];
 /** Only the media layers need a second pass after a successful picture; avoid walking/styling the whole DOM. */
 function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
   mediaShots = 0;
@@ -137,7 +148,16 @@ function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
     const shot = snapshotMedia(el);
     if (shot) { item.img = shot; mediaShots++; items.push(item); continue; }
     const doc = el.tagName === "IFRAME" ? innerDoc(el) : null;
-    if (doc) { svgChars = 0; walkDoc(doc, item.x, item.y, Math.min(frame.w, item.x + item.w), Math.min(frame.h, item.y + item.h), outline, 1, true); continue; }
+    if (doc) {
+      // Walking a whole page is costly for the person being viewed, so redraw it at most every 4 seconds.
+      if (Date.now() - subAt > 4000) {
+        subAt = Date.now(); svgChars = 0; subCache = [];
+        walkDoc(doc, item.x, item.y, Math.min(frame.w, item.x + item.w), Math.min(frame.h, item.y + item.h), subCache, 1, true);
+        subCache = subCache.slice(0, 300);
+      }
+      outline.push(...subCache);
+      continue;
+    }
     items.push(item);
   }
   return [...items, ...outline.slice(0, MAX_ITEMS)];
@@ -145,21 +165,21 @@ function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
 
 /** Backs off when captures are expensive so screen viewing never competes with the visitor's own interactions. */
 export function nextCaptureDelay(captureMs: number): number {
-  if (!Number.isFinite(captureMs) || captureMs < 0) return 4000;
-  return Math.min(5000, Math.max(900, Math.round(captureMs * 8)));
+  if (!Number.isFinite(captureMs) || captureMs < 0) return 6000;
+  return Math.min(8000, Math.max(2200, Math.round(captureMs * 12)));
 }
 
 /** Cheap updates for animated media; the viewer keeps the last full picture underneath. */
 export function captureMediaFrame(): ScreenFrame {
   const w = window.innerWidth, h = window.innerHeight;
-  const base = { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor };
+  const base = { w, h, path: location.pathname, bg: solidBg() };
   return { ...base, items: captureMediaItems(base), mediaOnly: true };
 }
 
 /** Capture actual rendered pixels first; only pay for the full DOM outline when pixels are unavailable. */
 export async function captureLiveFrame(): Promise<ScreenFrame> {
   const w = window.innerWidth, h = window.innerHeight;
-  const base = { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor };
+  const base = { w, h, path: location.pathname, bg: solidBg() };
   try {
     const { toJpeg } = await import("html-to-image");
     for (const [width, quality] of [[1120, 0.72], [860, 0.52]] as const) {
@@ -232,16 +252,16 @@ export function applyControl(ev: ControlEvent) {
 
 /** Full-screen share the visitor explicitly accepted: pixels from their chosen screen/window/tab. */
 export async function startDisplayShare(): Promise<MediaStream | null> {
-  try { return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 10 }, audio: false }); }
+  try { return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 5 }, audio: false }); }
   catch { return null; }
 }
 
 let streamCanvas: HTMLCanvasElement | null = null;
 export function captureStreamFrame(video: HTMLVideoElement): ScreenFrame | null {
   const sw = video.videoWidth, sh = video.videoHeight;
-  if (!sw || !sh) return null;
+  if (!sw || !sh || video.readyState < 2) return null;
   streamCanvas ??= document.createElement("canvas");
-  const width = Math.min(1280, sw), height = Math.round(width * sh / sw);
+  const width = Math.min(1024, sw), height = Math.round(width * sh / sw);
   streamCanvas.width = width; streamCanvas.height = height;
   streamCanvas.getContext("2d")!.drawImage(video, 0, 0, width, height);
   for (const q of [0.6, 0.42, 0.28]) {

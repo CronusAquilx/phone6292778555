@@ -174,7 +174,7 @@ export function SiteControl() {
       try {
         const resized = lastFrame && (lastFrame.w !== window.innerWidth || lastFrame.h !== window.innerHeight);
         const sinceBase = Date.now() - lastBase;
-        const needsBase = forceBase || !lastFrame || resized || (dirty && sinceBase > 3_000) || sinceBase > 60_000;
+        const needsBase = forceBase || !lastFrame || resized || (dirty && sinceBase > 10_000) || sinceBase > 60_000;
         if (needsBase) { dirty = false; forceBase = false; } // Mutations during capture remain dirty for the next pass.
         let frame: ScreenFrame;
         const share = shareRef.current;
@@ -195,7 +195,7 @@ export function SiteControl() {
           void ch.send({ type: "broadcast", event: "frame", payload: frame });
         }
       } catch { /* captureLiveFrame already falls back */ }
-      finally { busy = false; schedule(shareRef.current ? 350 : nextCaptureDelay(performance.now() - started)); }
+      finally { busy = false; schedule(shareRef.current ? 800 : nextCaptureDelay(performance.now() - started)); }
     };
     const refresh = () => { dirty = true; forceBase = true; last = ""; schedule(0); };
     ch.on("broadcast", { event: "control" }, ({ payload }) => {
