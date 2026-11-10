@@ -3,14 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { searchUrl, usePrefs, type Prefs } from "@/lib/astra/prefs";
 import { openProxied } from "@/lib/astra/proxy";
 import { attachProxiedPopups } from "@/lib/astra/proxy-popups";
-import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, KeyRound, Lock, MapPin, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, Globe, Home, Lock, PictureInPicture2, Plus, RotateCw, Search, X } from "lucide-react";
 import { webSearch } from "@/lib/astra/web.functions";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { nativeVideoPip, openMiniPlayer } from "@/lib/pip";
-import { setSignInMode, signInModeOn, siteKey } from "@/lib/astra/signin-mode";
 
 
 
@@ -18,50 +17,18 @@ type Result = { title: string; url: string; snippet: string };
 type Snap = { title: string; query: string; results: Result[] | null; url: string | null };
 type Tab = Snap & { id: number; loading: boolean; back: Snap[]; fwd: Snap[]; nonce: number };
 let nextId = 1;
-/** Opens the site in its own browser tab, still through the proxy. */
-export function openSiteTab(url: string, name: string) {
-  const q = new URLSearchParams({ site: "1", url, name });
-  window.open(`/play?${q.toString()}`, "_blank");
-}
-
-/**
- * Asks the browser for location from the top-level page so the "Allow location?" prompt shows;
- * proxied sites share this page's origin, so they get the permission once it's granted.
- */
-export function requestLocation() {
-  if (!navigator.geolocation) { toast("Location isn't available in this browser."); return; }
-  navigator.geolocation.getCurrentPosition(
-    () => toast("Location shared", { description: "Reload the site if it still asks for your location." }),
-    (err) => toast("Location blocked", { description: err.code === err.PERMISSION_DENIED ? "Your browser blocked location. Click the lock or site icon next to the address bar, allow Location, then try again. In the editor preview, open the site in its own tab first." : "Your location couldn't be found. Try again." }),
-    { enableHighAccuracy: true, timeout: 15000 },
-  );
-}
-
 const blank = (): Tab => ({ id: nextId++, title: "New tab", query: "", results: null, url: null, loading: false, back: [], fwd: [], nonce: 0 });
 
 export function WebView({ initialQ, initialSite, proxyOnly = false, app = false, appTitle = "YouTube" }: { initialQ?: string | undefined; initialSite?: string; proxyOnly?: boolean; app?: boolean; appTitle?: string } = {}) {
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
-  const ytPrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
+  const framePrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
   const native = (prefs.layout === "windows" || prefs.layout === "windows2") || prefs.console === "sony" || prefs.console === "series";
   const [tabs, setTabs] = useState<Tab[]>(() => [blank()]);
   const [active, setActive] = useState(tabs[0]?.id ?? 1);
   const [input, setInput] = useState(initialSite ?? initialQ ?? "");
   const tab = tabs.find((t) => t.id === active) ?? tabs[0] ?? blank();
-  const [, bumpSignIn] = useState(0);
-  // Sites the sign-in connection can't reach this visit fall back to the regular one.
-  const [unreachable, setUnreachable] = useState<Set<string>>(() => new Set());
-  const signIn = signInModeOn(tab.url) && !unreachable.has(siteKey(tab.url));
-  const framePrefs = signIn && ytPrefs.transport === "astra" ? { ...ytPrefs, transport: "epoxy" as const } : ytPrefs;
-  const toggleSignIn = () => {
-    setSignInMode(tab.url, !signIn);
-    setUnreachable((u) => { const n = new Set(u); n.delete(siteKey(tab.url)); return n; });
-    bumpSignIn((n) => n + 1);
-    patch(tab.id, { nonce: tab.nonce + 1 });
-    toast(!signIn ? "Sign-in mode on" : "Sign-in mode off", { description: !signIn ? "This site now uses a separate secure connection that logins and captchas accept more often." : "Back to the regular proxy connection." });
-  };
-  const signInBtn = (cls: string) => tab.url ? <button type="button" onClick={toggleSignIn} className={cn(cls, signIn && "bg-accent text-foreground")} aria-pressed={signIn} aria-label="Sign-in mode" title={signIn ? "Sign-in mode is on — tap to use the regular connection" : "Sign-in mode — use if logins or captchas fail"}><KeyRound className="size-4"/></button> : null;
   const patch = (id: number, p: Partial<Tab>) => setTabs((ts) => ts.map((t) => {
     if (t.id !== id) return t;
     const nav = ("url" in p || "results" in p) && !("back" in p) && (t.url || t.results);
@@ -137,10 +104,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
         <button type="button" onClick={appReload} className={navBtn} aria-label="Reload" title="Reload"><RotateCw className="size-4"/></button>
         <button type="button" onClick={appHome} className={navBtn} aria-label={`${appTitle} home`} title="Home"><Home className="size-4"/></button>
         <span className="ml-1 truncate text-xs font-medium text-muted-foreground">{appTitle}</span>
-        <span className="ml-auto"/>
-        {signInBtn(navBtn)}
-        {tab.url && <button type="button" onClick={requestLocation} className={navBtn} aria-label="Share my location" title="Share my location with this site"><MapPin className="size-4"/></button>}
-        {tab.url && <button type="button" onClick={() => openSiteTab(tab.url!, appTitle)} className={navBtn} aria-label="Open in a new tab" title="Open in a new tab (still through the proxy)"><ExternalLink className="size-4"/></button>}
+        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={cn(navBtn, "ml-auto")} aria-label="Open directly (for sign-in and captchas)" title="Open directly — use for sign-in and captchas"><ExternalLink className="size-4"/></a>}
         <button type="button" onClick={() => void appPip()} className={navBtn} aria-label="Picture in picture" title="Picture in picture"><PictureInPicture2 className="size-4"/></button>
       </div>}
       {!app && <><div className="flex items-end gap-1 overflow-x-auto bg-muted px-2 pt-2">
@@ -165,17 +129,11 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
           <input value={input} onChange={(e) => setInput(e.target.value)} onFocus={(e) => e.target.select()} placeholder="Search or type a URL"
             className="flex-1 bg-transparent text-sm outline-none" />
         </div>
-        {signInBtn(navBtn)}
-        {tab.url && <button type="button" onClick={requestLocation} className={navBtn} aria-label="Share my location" title="Share my location with this site"><MapPin className="size-4"/></button>}
-        {tab.url && <button type="button" onClick={() => openSiteTab(tab.url!, tab.title)} className={navBtn} aria-label="Open in a new tab" title="Open in a new tab (still through the proxy)"><ExternalLink className="size-4" /></button>}
+        {tab.url && <a href={tab.url} target="_blank" rel="noreferrer" className={navBtn} aria-label="Open in new window"><ExternalLink className="size-4" /></a>}
       </form></>}
       <div ref={frameHost} className="min-h-0 flex-1 overflow-y-auto">
         {tab.url ? (
-          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onConnectionFail={signIn ? () => {
-            const key = siteKey(tab.url);
-            setUnreachable((u) => new Set(u).add(key));
-            toast("Switched to the regular connection", { description: `${key} blocks the sign-in connection, so it now loads the usual way.` });
-          } : undefined} onFail={() => {
+          <ProxiedFrame key={`${tab.url}#${tab.nonce}`} url={tab.url} title={tab.title} prefs={framePrefs} proxyOnly={proxyOnly} onFail={() => {
             if (!/^https?:\/\//i.test(tab.query) && !/^[\w-]+(\.[\w-]+)+/.test(tab.query)) {
               const id = tab.id, q = tab.query;
               patch(id, { url: null, loading: true });
@@ -207,7 +165,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   );
 }
 
-export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly, onConnectionFail }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean; onConnectionFail?: (() => void) | undefined }) {
+export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly }: { url: string; title: string; prefs: Prefs; onFail: () => void; proxyOnly: boolean }) {
   const ref = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -216,23 +174,10 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly, onConnectio
     const frame = ref.current;
     if (!frame) return;
     const detach = attachProxiedPopups(frame, url, prefs);
-    let watch: ReturnType<typeof setInterval> | undefined;
     openProxied(frame, url, prefs)
-      .then(() => {
-        if (cancelled) return;
-        setStatus("ready");
-        if (!onConnectionFail) return;
-        // The proxy worker shows this page when the tunnel can't reach the site at all.
-        let checks = 0;
-        watch = setInterval(() => {
-          let text = "";
-          try { text = frame.contentDocument?.body?.innerText ?? ""; } catch { /* cross-origin */ }
-          if (/^Internal Service Worker Error/.test(text.trim())) { clearInterval(watch); if (!cancelled) onConnectionFail(); }
-          else if (++checks > 20) clearInterval(watch);
-        }, 1000);
-      })
+      .then(() => { if (!cancelled) setStatus("ready"); })
       .catch(() => { if (!cancelled) { setStatus("error"); onFail(); } });
-    return () => { cancelled = true; if (watch) clearInterval(watch); detach(); };
+    return () => { cancelled = true; detach(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, prefs.transport, prefs.wisp]);
   if (status === "error") {
@@ -246,10 +191,10 @@ export function ProxiedFrame({ url, title, prefs, onFail, proxyOnly, onConnectio
   }
   return (
     <div className="flex h-full flex-col">
-      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share; geolocation" allowFullScreen />
+      <iframe ref={ref} title={title} className="min-h-0 w-full flex-1 bg-background" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-read; clipboard-write; camera; microphone; display-capture; storage-access; web-share" allowFullScreen />
       <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {status === "loading" && "Starting the proxy…"}
-        {status === "ready" && (prefs.transport === "astra" ? "Loaded through the BirchBlock proxy." : "Loaded through the secure sign-in connection.")}
+        {status === "ready" && "Loaded through the BirchBlock proxy."}
       </p>
     </div>
   );

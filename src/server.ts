@@ -55,7 +55,7 @@ async function proxyWebSocket(url: URL): Promise<Response> {
   const target = url.searchParams.get("url") ?? "";
   if (!/^wss?:\/\//i.test(target)) return new Response("Bad url", { status: 400 });
   const protocols = url.searchParams.get("protocols") ?? "";
-  const headers: Record<string, string> = { Upgrade: "websocket", origin: url.searchParams.get("origin") ?? new URL(target.replace(/^ws/, "http")).origin, "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36" };
+  const headers: Record<string, string> = { Upgrade: "websocket", origin: url.searchParams.get("origin") ?? new URL(target.replace(/^ws/, "http")).origin, "user-agent": "Mozilla/5.0" };
   if (protocols) headers["sec-websocket-protocol"] = protocols;
   const res = await fetch(target.replace(/^ws/, "http"), { headers });
   const up = (res as Response & { webSocket?: WS | null }).webSocket;

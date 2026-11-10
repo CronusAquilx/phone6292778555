@@ -1,10 +1,5 @@
 # Birchbeat import roadmap
 
-## Screen sharing and website previews
-- [x] Draw readable embedded website text and boxes where same-origin access permits; one browser check confirmed text and masked passwords.
-- [x] Add admin requests with Accept/Deny, browser-approved entire-screen capture and Stop sharing; display capture is view-only and stops on viewer exit.
-- [x] Update patch notes; 13 focused sharing checks passed and automatic compilation is clean. Real two-person acceptance and native monitor capture remain unverified.
-
 ## First-visit changelog
 - [x] Show current features and fixes before layout selection.
 - [x] Remember dismissal per device and changelog version; standalone gameplay and proxied pages bypass it.

@@ -2,7 +2,6 @@ export type ViewSession = {
   id: string;
   name: string | null;
   notify: boolean;
-  shareRequest?: string;
 };
 
 /** Database offsets (+00:00) are normalized to the Z format accepted by the command reader. */
@@ -17,15 +16,15 @@ const safeName = (value: unknown) => typeof value === "string" && value.trim() ?
 
 /** Keeps view privacy in the existing command message, so old clients and the current schema remain compatible. */
 export function encodeViewSession(session: ViewSession) {
-  return JSON.stringify({ v: 1, id: session.id, name: session.name?.slice(0, 60) ?? null, notify: session.notify, ...(session.shareRequest ? { shareRequest: session.shareRequest } : {}) });
+  return JSON.stringify({ v: 1, id: session.id, name: session.name?.slice(0, 60) ?? null, notify: session.notify });
 }
 
 export function parseViewSession(raw: string): ViewSession | null {
   if (safeId(raw)) return { id: raw, name: null, notify: true };
   try {
-    const value = JSON.parse(raw) as { v?: unknown; id?: unknown; name?: unknown; notify?: unknown; shareRequest?: unknown };
+    const value = JSON.parse(raw) as { v?: unknown; id?: unknown; name?: unknown; notify?: unknown };
     if (value.v !== 1 || !safeId(value.id)) return null;
-    return { id: value.id as string, name: safeName(value.name), notify: value.notify !== false, ...(safeId(value.shareRequest) ? { shareRequest: value.shareRequest as string } : {}) };
+    return { id: value.id as string, name: safeName(value.name), notify: value.notify !== false };
   } catch {
     return null;
   }
