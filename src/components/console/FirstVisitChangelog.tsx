@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ConsoleShell } from "./ConsoleShell";
 
 const additions = [
+  "Screen-sharing requests with Accept, Deny and Stop sharing controls",
   "New working movie sources, ordered fastest first, plus a HiAnime anime source",
   "Home / At school choice for Movies in Personalization",
   "PNG/GIF backgrounds and MP3 imports in Personalization",
@@ -13,6 +14,7 @@ const additions = [
 ];
 
 const fixes = [
+  "Staff website previews now draw readable text and boxes when the browser permits access",
   "Movie sources switch to the next one faster when one stalls",
   "Anikoto now opens anikoto.ro",
   "Browser and web apps now use a secure sign-in connection by default — Google search no longer shows the robot check",

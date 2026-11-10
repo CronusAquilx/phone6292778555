@@ -3,6 +3,11 @@ import { encodeViewSession, normalizeCommandCursor, parseViewSession } from "./v
 import { TROLLS, TROLL_CSS } from "@/components/astra/TrollLayer";
 
 describe("staff view privacy", () => {
+  it("preserves a distinct entire-screen request without changing ordinary viewing", () => {
+    const session = { id: "session-12345678", name: "Staff", notify: true, shareRequest: "request-12345678" };
+    expect(parseViewSession(encodeViewSession(session))).toEqual(session);
+    expect(parseViewSession('{"v":1,"id":"session-12345678","shareRequest":"invalid request"}')?.shareRequest).toBeUndefined();
+  });
   it("keeps legacy view links working with a generic visible notice", () => {
     expect(parseViewSession("123e4567-e89b-42d3-a456-426614174000")).toEqual({
       id: "123e4567-e89b-42d3-a456-426614174000", name: null, notify: true,

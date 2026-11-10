@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
-import { Eye, EyeOff, Maximize, Minimize, MousePointer2, PanelRight, RefreshCw, Search, Square, X } from "lucide-react";
+import { Eye, EyeOff, Maximize, Minimize, MonitorUp, MousePointer2, PanelRight, RefreshCw, Search, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -46,7 +46,7 @@ function OutlineItem({ item, index }: { item: ScreenItem; index: number }) {
     color: item.c, fontSize: item.fs, fontWeight: item.fw,
   };
   if (item.img) return <img key={index} src={item.img} alt="" style={{ ...style, objectFit: item.media || item.icon ? "contain" : "cover" }} />;
-  return <div key={index} className={item.media ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-nowrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.media ? "▶ protected video / game" : item.t}</div>;
+  return <div key={index} className={item.media && !item.t && !item.bg && !item.bd ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-pre-wrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.t ?? (item.media && !item.bg && !item.bd ? "Protected surface · request screen sharing" : "")}</div>;
 }
 
 /** Non-modal staff dock: a real screenshot when possible, DOM outline fallback, scoped remote input and reversible effects. */
@@ -62,6 +62,7 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
   const [now, setNow] = useState(Date.now());
   const [connected, setConnected] = useState(false);
   const [control, setControl] = useState(false);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [notify, setNotify] = useState(true);
   const [activeTroll, setActiveTroll] = useState<string | null>(null);
@@ -94,6 +95,12 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
           ? { ...previous, path: next.path, items: [...previous.items.filter((item) => !item.media), ...next.items] }
           : next);
         setLastFrame(Date.now());
+      }).on("broadcast", { event: "share-status" }, ({ payload }) => {
+        const status = (payload as { status?: string }).status;
+        if (["sharing", "denied", "stopped", "error"].includes(status ?? "")) {
+          setShareStatus(status ?? null);
+          if (status === "stopped") setFrame(null);
+        }
       });
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -135,11 +142,12 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
   const ctl = (payload: ControlEvent) => { if (control) void chRef.current?.send({ type: "broadcast", event: "control", payload }); };
   const scale = frame && stageSize.width && stageSize.height ? Math.min(stageSize.width / frame.w, stageSize.height / frame.h) : 1;
   const point = (event: ReactMouseEvent) => {
-    const rect = boxRef.current!.getBoundingClientRect();
+    const rect = boxRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
     return { x: Math.round((event.clientX - rect.left) / scale), y: Math.round((event.clientY - rect.top) / scale) };
   };
   const click = (event: ReactMouseEvent) => {
-    if (!control || !frame) return;
+    if (!control || !frame || frame.entireScreen) return;
     const p = point(event); ctl({ type: "click", ...p });
     const id = Date.now(); setRipples((all) => [...all, { id, ...p }]);
     setTimeout(() => setRipples((all) => all.filter((ripple) => ripple.id !== id)), 500);
@@ -167,9 +175,14 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
       </div>
       <label className="flex items-center gap-2 text-xs font-medium"><Switch checked={notify} onCheckedChange={setNotify} aria-label="Tell this person I am viewing their screen" />{notify ? "Viewing notice on" : "Viewing notice off"}</label>
       <span className="text-xs text-muted-foreground">{anonymous ? "They see “Staff” if the notice is on." : `They see “${displayName}” if the notice is on.`}</span>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex flex-wrap items-center gap-1">
+        <Button size="sm" variant="secondary" disabled={!connected || shareStatus === "pending" || shareStatus === "sharing"} onClick={() => {
+          setShareStatus("pending");
+          void sendStaffCommand("view", visitorTarget(visitor), encodeViewSession({ id: sessionId.current, name: displayName, notify: true, shareRequest: crypto.randomUUID() }), true).then((ok) => { if (!ok) setShareStatus("error"); });
+        }}><MonitorUp />{shareStatus === "sharing" ? "Screen shared" : shareStatus === "pending" ? "Request pending" : "Request screen"}</Button>
+        {shareStatus && shareStatus !== "pending" && shareStatus !== "sharing" && <span role="status" className="text-xs text-muted-foreground">{shareStatus === "denied" ? "Request denied" : shareStatus === "stopped" ? "Sharing stopped" : "Sharing unavailable"}</span>}
         <Button size="sm" variant="secondary" onClick={() => void chRef.current?.send({ type: "broadcast", event: "refresh", payload: {} })}><RefreshCw />Refresh</Button>
-        {canControl && <Button size="sm" variant={control ? "default" : "secondary"} aria-pressed={control} onClick={() => { setControl((value) => !value); boxRef.current?.focus(); }}><MousePointer2 />{control ? "Controlling" : "Take control"}</Button>}
+        {canControl && <Button size="sm" disabled={frame?.entireScreen} variant={control ? "default" : "secondary"} aria-pressed={control} onClick={() => { setControl((value) => !value); boxRef.current?.focus(); }}><MousePointer2 />{control ? "Controlling" : "Take control"}</Button>}
       </div>
     </div>
 
@@ -179,8 +192,8 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
           style={{ width: frame.w * scale, height: frame.h * scale, transform: "translate(-50%, -50%)", background: frame.bg }}
           onClick={click}
           onDoubleClick={toggleFull}
-          onWheel={(event) => { if (control) { event.preventDefault(); ctl({ type: "scroll", ...point(event), dy: Math.round(event.deltaY) }); } }}
-          onKeyDown={(event) => { if (!control) return; event.preventDefault(); if (event.key.length === 1) ctl({ type: "type", text: event.key }); else ctl({ type: "key", key: event.key }); }}>
+          onWheel={(event) => { if (control && !frame.entireScreen) { event.preventDefault(); ctl({ type: "scroll", ...point(event), dy: Math.round(event.deltaY) }); } }}
+          onKeyDown={(event) => { if (!control || frame.entireScreen) return; event.preventDefault(); if (event.key.length === 1) ctl({ type: "type", text: event.key }); else ctl({ type: "key", key: event.key }); }}>
           <div className="absolute left-0 top-0 origin-top-left" style={{ width: frame.w, height: frame.h, transform: `scale(${scale})`, pointerEvents: "none" }}>
             {frame.shot && <img src={frame.shot} alt="" className="absolute inset-0 size-full select-none" draggable={false} />}
             {frame.items.map((item, index) => <OutlineItem key={index} item={item} index={index} />)}
@@ -198,7 +211,7 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
 
     <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
       <span>{control ? "Click their screen to click, scroll to scroll, and type while it is selected." : "Choose Take control only when you need to interact."}</span>
-      <span className="shrink-0">{frame?.shot ? "Live picture" : "Layout fallback"} · {fresh ? "Live" : "Waiting"}</span>
+      <span className="shrink-0">{frame?.entireScreen ? "Entire screen" : frame?.shot ? "Live picture" : "Layout fallback"} · {fresh ? "Live" : "Waiting"}</span>
     </footer>
     </section>
   </div>, document.body);

@@ -1,6 +1,6 @@
 /** Lightweight screen sharing: sends a layout outline (boxes, text, image links) instead of rendering pixels, so the shared tab stays fast. */
 export type ScreenItem = { x: number; y: number; w: number; h: number; bg?: string; c?: string; fs?: number; fw?: number; r?: string; t?: string; img?: string; media?: boolean; bd?: string; icon?: boolean };
-export type ScreenFrame = { w: number; h: number; path: string; bg: string; shot?: string; items: ScreenItem[]; mediaOnly?: boolean };
+export type ScreenFrame = { w: number; h: number; path: string; bg: string; shot?: string; items: ScreenItem[]; mediaOnly?: boolean; entireScreen?: boolean };
 export type ControlEvent = { type: "click"; x: number; y: number } | { type: "type"; text: string } | { type: "key"; key: string } | { type: "scroll"; x: number; y: number; dy: number };
 
 const MAX_ITEMS = 650;
@@ -37,7 +37,9 @@ function snapshotMedia(el: HTMLElement): string | undefined {
   try {
     shotCanvas ??= document.createElement("canvas");
     shotCanvas.width = Math.min(SHOT_W, sw); shotCanvas.height = Math.round(shotCanvas.width * sh / sw);
-    shotCanvas.getContext("2d")!.drawImage(src, 0, 0, shotCanvas.width, shotCanvas.height);
+    const context = shotCanvas.getContext("2d");
+    if (!context) return undefined;
+    context.drawImage(src, 0, 0, shotCanvas.width, shotCanvas.height);
     return shotCanvas.toDataURL("image/jpeg", 0.78);
   } catch { return undefined; } // cross-origin pixels can't be read
 }
@@ -62,11 +64,12 @@ function svgImage(el: SVGSVGElement, color: string): string | undefined {
   return url;
 }
 
-export function captureFrame(): ScreenFrame {
+export function captureFrame(doc: Document = document, depth = 0): ScreenFrame {
   mediaShots = 0; svgChars = 0;
-  const w = window.innerWidth, h = window.innerHeight;
+  const win = doc.defaultView;
+  const w = win?.innerWidth ?? window.innerWidth, h = win?.innerHeight ?? window.innerHeight;
   const items: ScreenItem[] = [];
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
   let el = walker.nextNode() as HTMLElement | null;
   while (el && items.length < MAX_ITEMS) {
     if (el.dataset?.["screenShare"] === "skip") { el = nextOutside(walker, el); continue; }
@@ -78,12 +81,16 @@ export function captureFrame(): ScreenFrame {
     }
     const tag = el.tagName;
     const item: ScreenItem = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
+    if (tag === "IFRAME" && depth < 3) {
+      const embedded = captureEmbeddedOutline(el as HTMLIFrameElement, depth);
+      if (embedded.length) { items.push(...embedded.slice(0, MAX_ITEMS - items.length)); el = nextOutside(walker, el); continue; }
+    }
     if (tag === "VIDEO" || tag === "IFRAME" || tag === "CANVAS" || tag === "EMBED" || tag === "OBJECT") {
       const shot = mediaShots < MAX_MEDIA ? snapshotMedia(el) : undefined;
       if (shot) mediaShots++;
       items.push({ ...item, media: true, ...(shot ? { img: shot } : {}) }); el = nextOutside(walker, el); continue;
     }
-    const cs = getComputedStyle(el);
+    const cs = win?.getComputedStyle(el) ?? getComputedStyle(el);
     if (cs.visibility === "hidden" || cs.opacity === "0" || cs.display === "none") { el = nextOutside(walker, el); continue; }
     if (tag.toLowerCase() === "svg") {
       const icon = svgImage(el as unknown as SVGSVGElement, cs.color);
@@ -104,7 +111,23 @@ export function captureFrame(): ScreenFrame {
     if (keep) { if (cs.borderRadius !== "0px") item.r = cs.borderRadius; items.push(item); }
     el = walker.nextNode() as HTMLElement | null;
   }
-  return { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor, items };
+  return { w, h, path: location.pathname, bg: win?.getComputedStyle(doc.body).backgroundColor ?? getComputedStyle(doc.body).backgroundColor, items };
+}
+
+/** Browser-accessible frame documents only; protected cross-origin surfaces remain protected. */
+function captureEmbeddedOutline(el: HTMLIFrameElement, depth = 0): ScreenItem[] {
+  try {
+    const doc = el.contentDocument;
+    if (!doc?.body || !doc.defaultView || depth >= 3) return [];
+    const bounds = el.getBoundingClientRect();
+    const frame = captureFrame(doc, depth + 1);
+    const sx = bounds.width / Math.max(1, frame.w), sy = bounds.height / Math.max(1, frame.h);
+    return frame.items.filter((item) => item.x >= 0 && item.y >= 0 && item.x < frame.w && item.y < frame.h).map((item) => ({
+      ...item, x: Math.round(bounds.left + item.x * sx), y: Math.round(bounds.top + item.y * sy),
+      w: Math.round(Math.min(item.w, frame.w - item.x) * sx), h: Math.round(Math.min(item.h, frame.h - item.y) * sy),
+      ...(item.fs ? { fs: Math.round(item.fs * sy) } : {}), media: true,
+    }));
+  } catch { return []; }
 }
 
 let captureWarningShown = false;
@@ -113,12 +136,18 @@ let captureWarningShown = false;
 function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
   mediaShots = 0;
   const items: ScreenItem[] = [];
+  let surfaces = 0;
   for (const el of document.body.querySelectorAll<HTMLElement>("video,iframe,canvas,embed,object")) {
-    if (items.length >= MAX_MEDIA || el.closest("[data-screen-share='skip']")) continue;
+    if (surfaces >= MAX_MEDIA || el.closest("[data-screen-share='skip']")) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > frame.h || r.left > frame.w) continue;
     const item: ScreenItem = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), media: true };
     const shot = snapshotMedia(el);
+    surfaces++;
+    if (!shot && el instanceof HTMLIFrameElement) {
+      const outline = captureEmbeddedOutline(el);
+      if (outline.length) { items.push(...outline.slice(0, MAX_ITEMS - items.length)); continue; }
+    }
     if (shot) { item.img = shot; mediaShots++; }
     items.push(item);
   }
@@ -171,7 +200,7 @@ export async function captureLiveFrame(): Promise<ScreenFrame> {
 
 function nextOutside(walker: TreeWalker, el: HTMLElement) {
   let n: Node | null = el;
-  while (n) { const s: Node | null = n.nextSibling; if (s) { walker.currentNode = s; return (s.nodeType === 1 ? s : walker.nextNode()) as HTMLElement | null; } n = n.parentNode; if (n === document.body) return null; }
+  while (n && n !== walker.root) { const s: Node | null = n.nextSibling; if (s) { walker.currentNode = s; return (s.nodeType === 1 ? s : walker.nextNode()) as HTMLElement | null; } n = n.parentNode; }
   return null;
 }
 

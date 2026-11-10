@@ -8,6 +8,9 @@ import { applyControl, captureLiveFrame, captureMediaFrame, nextCaptureDelay, ty
 import { normalizeCommandCursor, parseViewSession, type ViewSession } from "@/lib/astra/view-session";
 import { visitorCommands } from "@/lib/astra/visitor-commands.functions";
 import { TrollLayer } from "./TrollLayer";
+import { Button } from "@/components/ui/button";
+import { MonitorUp, Square } from "lucide-react";
+import { requestEntireScreen } from "@/lib/astra/display-share";
 
 export type LiveVisitor = { key: string; deviceId: string; userId: string | null; name: string; path: string; since: string; owner: boolean; idle?: boolean };
 export const OWNER_EMAIL = "qaisdev@gmail.org";
@@ -45,6 +48,13 @@ export function SiteControl() {
   const [announce, setAnnounce] = useState<string | null>(null);
   const [banned, setBanned] = useState(false);
   const [viewing, setViewing] = useState<ViewSession | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [answeredRequest, setAnsweredRequest] = useState<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const shareChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const viewingRef = useRef(viewing); viewingRef.current = viewing;
   const [idle, setIdle] = useState(false);
   const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null);
   const owner = user?.email?.toLowerCase() === OWNER_EMAIL;
@@ -139,9 +149,47 @@ export function SiteControl() {
   // Live screen share: sends real pictures when possible, with the layout outline as a safe fallback.
   const [controlled, setControlled] = useState(false);
   const viewId = viewing?.id ?? null;
+  const sendShareStatus = (status: string) => {
+    void shareChannelRef.current?.send({ type: "broadcast", event: "share-status", payload: { status } });
+  };
+  const stopSharing = () => {
+    const stream = streamRef.current;
+    streamRef.current = null;
+    stream?.getTracks().forEach((track) => track.stop());
+    if (videoRef.current) { videoRef.current.pause(); videoRef.current.srcObject = null; }
+    videoRef.current = null;
+    setSharing(false);
+    sendShareStatus("stopped");
+  };
+  const acceptSharing = async () => {
+    const request = viewing;
+    if (!request?.shareRequest || shareBusy) return;
+    setShareBusy(true);
+    setAnsweredRequest(request.shareRequest);
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Screen sharing isn't available in this browser.");
+      const stream = await requestEntireScreen(navigator.mediaDevices);
+      if (viewingRef.current?.id !== request.id || viewingRef.current?.shareRequest !== request.shareRequest) {
+        stream.getTracks().forEach((track) => track.stop()); return;
+      }
+      streamRef.current = stream;
+      const video = document.createElement("video");
+      video.muted = true; video.srcObject = stream;
+      videoRef.current = video;
+      await video.play();
+      if (streamRef.current !== stream) return;
+      stream.getVideoTracks()[0]?.addEventListener("ended", stopSharing, { once: true });
+      setSharing(true); sendShareStatus("sharing");
+    } catch (error) {
+      stopSharing(); sendShareStatus("error");
+      toast.error(error instanceof Error ? error.message : "Screen sharing was cancelled.");
+    } finally { setShareBusy(false); }
+  };
   useEffect(() => {
     if (!viewId) return;
     const ch = supabase.channel(`screen-${viewId}`, { config: { broadcast: { ack: false } } });
+    shareChannelRef.current = ch;
+    const displayCanvas = document.createElement("canvas");
     let live = true;
     let busy = false;
     let dirty = true;
@@ -159,7 +207,7 @@ export function SiteControl() {
       clearTimeout(timer);
       timer = setTimeout(() => {
         if (!live) return;
-        if (document.hidden) { schedule(3000); return; }
+        if (document.hidden && !streamRef.current) { schedule(3000); return; }
         if ("requestIdleCallback" in window) idleId = window.requestIdleCallback(() => { idleId = null; void tick(); }, { timeout: 750 });
         else void tick();
       }, delay);
@@ -174,12 +222,24 @@ export function SiteControl() {
         const needsBase = forceBase || !lastFrame || resized || (dirty && sinceBase > 15_000) || sinceBase > 60_000;
         if (needsBase) { dirty = false; forceBase = false; } // Mutations during capture remain dirty for the next pass.
         let frame: ScreenFrame;
-        if (needsBase) {
+        const video = videoRef.current;
+        if (streamRef.current && video && video.readyState >= 2 && video.videoWidth && video.videoHeight) {
+          displayCanvas.width = Math.min(1280, video.videoWidth);
+          displayCanvas.height = Math.round(displayCanvas.width * video.videoHeight / video.videoWidth);
+          const context = displayCanvas.getContext("2d");
+          if (!context) return;
+          context.drawImage(video, 0, 0, displayCanvas.width, displayCanvas.height);
+          let shot = displayCanvas.toDataURL("image/jpeg", 0.65);
+          if (shot.length > 235_000) shot = displayCanvas.toDataURL("image/jpeg", 0.35);
+          frame = { w: video.videoWidth, h: video.videoHeight, path: "Entire screen", bg: "transparent", shot, items: [], entireScreen: true };
+          forceBase = true;
+        } else if (needsBase) {
           frame = await captureLiveFrame();
           lastFrame = frame; lastBase = Date.now();
         } else {
           const media = captureMediaFrame();
-          frame = media.items.length ? media : lastFrame!;
+          if (!lastFrame) return;
+          frame = media.items.length ? media : lastFrame;
         }
         if (!live) return;
         const json = JSON.stringify(frame);
@@ -193,6 +253,7 @@ export function SiteControl() {
     };
     const refresh = () => { dirty = true; forceBase = true; last = ""; schedule(0); };
     ch.on("broadcast", { event: "control" }, ({ payload }) => {
+      if (streamRef.current) return; // Whole-screen sharing is view-only, never remote desktop control.
       setControlled(true);
       clearTimeout(controlTimer);
       controlTimer = setTimeout(() => setControlled(false), 4000);
@@ -216,6 +277,10 @@ export function SiteControl() {
       window.removeEventListener("resize", markDirty);
       window.removeEventListener("scroll", markDirty, { capture: true });
       setControlled(false); void supabase.removeChannel(ch);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      if (videoRef.current) { videoRef.current.pause(); videoRef.current.srcObject = null; }
+      videoRef.current = null; shareChannelRef.current = null; setSharing(false);
     };
   }, [viewId]);
 
@@ -228,6 +293,21 @@ export function SiteControl() {
     </div>
   );
   return <>
+    {viewing?.shareRequest && answeredRequest !== viewing.shareRequest && !sharing && <div data-screen-share="skip" className="fixed inset-0 z-[10040] grid place-items-center bg-background/70 p-4 backdrop-blur-sm">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="screen-request-title" aria-describedby="screen-request-description" className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-xl">
+        <MonitorUp className="mb-4 size-8 text-primary" />
+        <h2 id="screen-request-title" className="text-lg font-semibold">Share your entire screen?</h2>
+        <p id="screen-request-description" className="mt-2 text-sm text-muted-foreground">{viewing.name ?? "Staff"} requested your screen. Anything visible on the screen you choose will be shared, including other apps and personal information. You can stop at any time.</p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => { setAnsweredRequest(viewing.shareRequest ?? null); sendShareStatus("denied"); }}>Deny</Button>
+          <Button disabled={shareBusy} onClick={() => void acceptSharing()}><MonitorUp />Accept & share</Button>
+        </div>
+      </section>
+    </div>}
+    {sharing && <div data-screen-share="skip" role="status" className="fixed bottom-3 left-3 z-[10041] flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm text-card-foreground shadow-xl">
+      <MonitorUp className="size-4 text-destructive" /><span>Sharing your entire screen with {viewing?.name ?? "Staff"}</span>
+      <Button size="sm" variant="destructive" onClick={stopSharing}><Square />Stop sharing</Button>
+    </div>}
     {troll && !owner && <TrollLayer key={troll} troll={troll} onEnd={() => setTroll(null)} />}
     {viewing?.notify && <div data-screen-share="skip" className="fixed bottom-2 left-2 z-[9998] rounded-full bg-destructive px-3 py-1 text-xs text-destructive-foreground">{controlled ? `${viewing.name ?? "Staff"} is controlling your screen` : `${viewing.name ?? "Staff"} is viewing your screen`}</div>}
     {announce && (
