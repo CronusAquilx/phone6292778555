@@ -158,9 +158,19 @@ function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
       outline.push(...subCache);
       continue;
     }
+    try { const src = (el as HTMLIFrameElement).src || (el as HTMLVideoElement).currentSrc; if (src) item.t = new URL(src, location.href).hostname; } catch { /* ignore */ }
     items.push(item);
   }
-  return [...items, ...outline.slice(0, MAX_ITEMS)];
+  // Pictures from other sites (movie posters, thumbnails) often draw black in the screenshot; resend their links so the viewer loads them itself.
+  const pics: ScreenItem[] = [];
+  for (const img of document.body.querySelectorAll<HTMLImageElement>("img")) {
+    if (pics.length >= 60) break;
+    if (!/^https?:/.test(img.currentSrc || img.src) || img.closest("[data-screen-share='skip']")) continue;
+    const r = img.getBoundingClientRect();
+    if (r.width < 24 || r.height < 24 || r.bottom < 0 || r.right < 0 || r.top > frame.h || r.left > frame.w) continue;
+    pics.push({ x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), img: img.currentSrc || img.src, sub: true });
+  }
+  return [...pics, ...items, ...outline.slice(0, MAX_ITEMS)];
 }
 
 /** Backs off when captures are expensive so screen viewing never competes with the visitor's own interactions. */

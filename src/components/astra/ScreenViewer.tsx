@@ -45,8 +45,8 @@ function OutlineItem({ item, index }: { item: ScreenItem; index: number }) {
     background: item.bg, border: item.bd ? `1px solid ${item.bd}` : undefined, borderRadius: item.r,
     color: item.c, fontSize: item.fs, fontWeight: item.fw,
   };
-  if (item.img) return <img key={index} src={item.img} alt="" style={{ ...style, objectFit: item.media || item.icon ? "contain" : "cover" }} />;
-  return <div key={index} className={item.media ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-nowrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.media ? "▶ protected video / game" : item.t}</div>;
+  if (item.img) return <img key={index} src={item.img} alt="" style={{ ...style, objectFit: item.media || item.icon ? "contain" : "cover" }} referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} />;
+  return <div key={index} className={item.media ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-nowrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.media ? `▶ Protected video / game${item.t ? ` · ${item.t}` : ""} — ask them to share screen to see it` : item.t}</div>;
 }
 
 /** Non-modal staff dock: a real screenshot when possible, DOM outline fallback, scoped remote input and reversible effects. */
