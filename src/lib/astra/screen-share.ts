@@ -158,7 +158,7 @@ function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
       outline.push(...subCache);
       continue;
     }
-    try { const src = (el as HTMLIFrameElement).src || (el as HTMLVideoElement).currentSrc; if (src) item.t = new URL(src, location.href).hostname; } catch { /* ignore */ }
+    try { const src = (el as HTMLIFrameElement).src || (el as HTMLVideoElement).currentSrc; item.t = [document.title, src ? new URL(src, location.href).hostname : ""].filter(Boolean).join(" · "); } catch { /* ignore */ }
     items.push(item);
   }
   // Pictures from other sites (movie posters, thumbnails) often draw black in the screenshot; resend their links so the viewer loads them itself.

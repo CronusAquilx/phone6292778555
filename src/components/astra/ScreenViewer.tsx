@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
+import { useRouterState } from "@tanstack/react-router";
 import { Eye, EyeOff, MonitorUp, Maximize, Minimize, MousePointer2, PanelRight, RefreshCw, Search, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +47,7 @@ function OutlineItem({ item, index }: { item: ScreenItem; index: number }) {
     color: item.c, fontSize: item.fs, fontWeight: item.fw,
   };
   if (item.img) return <img key={index} src={item.img} alt="" style={{ ...style, objectFit: item.media || item.icon ? "contain" : "cover" }} referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} />;
-  return <div key={index} className={item.media ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-nowrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.media ? `▶ Protected video / game${item.t ? ` · ${item.t}` : ""} — ask them to share screen to see it` : item.t}</div>;
+  return <div key={index} className={item.media ? "flex items-center justify-center overflow-hidden bg-muted text-xs text-muted-foreground" : "flex items-center overflow-hidden whitespace-nowrap"} style={{ ...style, lineHeight: 1.2, textOverflow: "ellipsis" }}>{item.media ? `▶ ${item.t || "Protected video / game"} — ask them to share screen to see it live` : item.t}</div>;
 }
 
 /** Non-modal staff dock: a real screenshot when possible, DOM outline fallback, scoped remote input and reversible effects. */
@@ -62,6 +63,11 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
   const [now, setNow] = useState(Date.now());
   const [connected, setConnected] = useState(false);
   const [control, setControl] = useState(false);
+  const [mirror, setMirror] = useState(false);
+  const myHref = useRouterState({ select: (s) => s.location.href });
+  // Mirror mode: every page you open is opened for them too.
+  useEffect(() => { if (mirror) void sendStaffCommand("redirect", visitorTarget(visitor), myHref, true); }, [mirror, myHref]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sendTo = (href: string) => void sendStaffCommand("redirect", visitorTarget(visitor), href, true).then((ok) => { if (ok) toast.success(`Sent ${visitor.name} to ${href}`); });
   const [anonymous, setAnonymous] = useState(false);
   const [notify, setNotify] = useState(true);
   const [activeTroll, setActiveTroll] = useState<string | null>(null);
@@ -206,6 +212,12 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
       </aside>}
     </div>
 
+    <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-border bg-card px-4 py-2" data-screen-share="skip">
+      <span className="mr-1 text-xs font-medium text-muted-foreground">Send them to:</span>
+      {([["Home", "/desktop"], ["Games", "/games"], ["Movies", "/movies"], ["Music", "/music"], ["YouTube", "/youtube"], ["Browser", "/web"], ["Store", "/store"], ["Settings", "/settings"]] as const).map(([label, href]) =>
+        <Button key={href} size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => sendTo(href)}>{label}</Button>)}
+      <label className="ml-auto flex items-center gap-2 text-xs"><Switch checked={mirror} onCheckedChange={(v) => { setMirror(v); toast(v ? `Mirroring: pages you open now open for ${visitor.name}` : "Mirroring off"); }} />Mirror me</label>
+    </div>
     <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
       <span>{control ? "Click their screen to click, scroll to scroll, and type while it is selected." : "Choose Take control only when you need to interact."}</span>
       <span className="shrink-0">{frame?.screen ? "Whole screen" : frame?.shot ? "Live picture" : "Layout fallback"} · {fresh ? "Live" : "Waiting"}</span>

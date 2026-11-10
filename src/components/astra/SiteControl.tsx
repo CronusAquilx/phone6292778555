@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouterState } from "@tanstack/react-router";
+import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,7 @@ type Cmd = { kind: string; message: string | null };
 export function SiteControl() {
   const { user, guest } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
   const [paused, setPaused] = useState<string | null>(null);
   const [announce, setAnnounce] = useState<string | null>(null);
   const [banned, setBanned] = useState(false);
@@ -68,7 +69,7 @@ export function SiteControl() {
     if (cmd.kind === "pause") setPaused(cmd.message || "Your screen was paused by the staff.");
     if (cmd.kind === "resume") setPaused(null);
     if (cmd.kind === "reload") window.location.reload();
-    if (cmd.kind === "redirect" && cmd.message && /^\/(?!\/)[^\\\s]*$/.test(cmd.message)) window.location.assign(cmd.message);
+    if (cmd.kind === "redirect" && cmd.message && /^\/(?!\/)[^\\\s]*$/.test(cmd.message)) void router.navigate({ href: cmd.message });
     if (cmd.kind === "kick") { void signOutAll().finally(() => window.location.replace("/")); }
     if (cmd.kind === "ban") checkBan();
     if (cmd.kind === "troll" && cmd.message) setTroll(cmd.message);
