@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
-import { Eye, EyeOff, Maximize, Minimize, MousePointer2, PanelRight, RefreshCw, Search, Square, X } from "lucide-react";
+import { Eye, EyeOff, MonitorUp, Maximize, Minimize, MousePointer2, PanelRight, RefreshCw, Search, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -67,6 +67,7 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
   const [activeTroll, setActiveTroll] = useState<string | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [full, setFull] = useState(false);
+  const [share, setShare] = useState<"idle" | "asking" | "sharing" | "denied">("idle");
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -90,10 +91,16 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
     const channel = supabase.channel(`screen-${id}`, { config: { broadcast: { ack: false } } })
       .on("broadcast", { event: "frame" }, ({ payload }) => {
         const next = payload as ScreenFrame;
-        setFrame((previous) => next.mediaOnly && previous
-          ? { ...previous, path: next.path, items: [...previous.items.filter((item) => !item.media), ...next.items] }
+        setFrame((previous) => next.mediaOnly && previous && !previous.screen
+          ? { ...previous, path: next.path, items: [...previous.items.filter((item) => !item.media && !item.sub), ...next.items] }
           : next);
         setLastFrame(Date.now());
+      })
+      .on("broadcast", { event: "share-state" }, ({ payload }) => {
+        const state = (payload as { state?: string }).state;
+        if (state === "sharing") setShare("sharing");
+        else if (state === "denied") { setShare("denied"); toast.error(`${visitor.name} declined screen sharing.`); }
+        else setShare("idle");
       });
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -139,7 +146,7 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
     return { x: Math.round((event.clientX - rect.left) / scale), y: Math.round((event.clientY - rect.top) / scale) };
   };
   const click = (event: ReactMouseEvent) => {
-    if (!control || !frame) return;
+    if (!control || !frame || frame.screen) return;
     const p = point(event); ctl({ type: "click", ...p });
     const id = Date.now(); setRipples((all) => [...all, { id, ...p }]);
     setTimeout(() => setRipples((all) => all.filter((ripple) => ripple.id !== id)), 500);
@@ -169,6 +176,9 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
       <span className="text-xs text-muted-foreground">{anonymous ? "They see “Staff” if the notice is on." : `They see “${displayName}” if the notice is on.`}</span>
       <div className="ml-auto flex items-center gap-1">
         <Button size="sm" variant="secondary" onClick={() => void chRef.current?.send({ type: "broadcast", event: "refresh", payload: {} })}><RefreshCw />Refresh</Button>
+        {share === "sharing"
+          ? <Button size="sm" variant="secondary" onClick={() => { void chRef.current?.send({ type: "broadcast", event: "share-stop", payload: {} }); setShare("idle"); }}><MonitorUp />Stop full share</Button>
+          : <Button size="sm" variant="secondary" disabled={share === "asking"} onClick={() => { setShare("asking"); void chRef.current?.send({ type: "broadcast", event: "share-request", payload: { name: anonymous ? "Staff" : displayName } }); }}><MonitorUp />{share === "asking" ? "Waiting for answer…" : "Ask to share screen"}</Button>}
         {canControl && <Button size="sm" variant={control ? "default" : "secondary"} aria-pressed={control} onClick={() => { setControl((value) => !value); boxRef.current?.focus(); }}><MousePointer2 />{control ? "Controlling" : "Take control"}</Button>}
       </div>
     </div>
@@ -198,7 +208,7 @@ export function ScreenViewer({ visitor, canControl, canTroll, onClose }: {
 
     <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
       <span>{control ? "Click their screen to click, scroll to scroll, and type while it is selected." : "Choose Take control only when you need to interact."}</span>
-      <span className="shrink-0">{frame?.shot ? "Live picture" : "Layout fallback"} · {fresh ? "Live" : "Waiting"}</span>
+      <span className="shrink-0">{frame?.screen ? "Whole screen" : frame?.shot ? "Live picture" : "Layout fallback"} · {fresh ? "Live" : "Waiting"}</span>
     </footer>
     </section>
   </div>, document.body);

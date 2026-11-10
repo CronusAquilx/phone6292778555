@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, signOutAll } from "@/lib/auth";
-import { applyControl, captureLiveFrame, captureMediaFrame, nextCaptureDelay, type ControlEvent, type ScreenFrame } from "@/lib/astra/screen-share";
+import { applyControl, captureStreamFrame, startDisplayShare, captureLiveFrame, captureMediaFrame, nextCaptureDelay, type ControlEvent, type ScreenFrame } from "@/lib/astra/screen-share";
 import { normalizeCommandCursor, parseViewSession, type ViewSession } from "@/lib/astra/view-session";
 import { visitorCommands } from "@/lib/astra/visitor-commands.functions";
 import { TrollLayer } from "./TrollLayer";
@@ -138,6 +138,9 @@ export function SiteControl() {
 
   // Live screen share: sends real pictures when possible, with the layout outline as a safe fallback.
   const [controlled, setControlled] = useState(false);
+  const [shareAsk, setShareAsk] = useState<string | null>(null);
+  const shareRef = useRef<{ stream: MediaStream; video: HTMLVideoElement } | null>(null);
+  const answerRef = useRef<(ok: boolean) => void>(() => {});
   const viewId = viewing?.id ?? null;
   useEffect(() => {
     if (!viewId) return;
@@ -171,10 +174,13 @@ export function SiteControl() {
       try {
         const resized = lastFrame && (lastFrame.w !== window.innerWidth || lastFrame.h !== window.innerHeight);
         const sinceBase = Date.now() - lastBase;
-        const needsBase = forceBase || !lastFrame || resized || (dirty && sinceBase > 15_000) || sinceBase > 60_000;
+        const needsBase = forceBase || !lastFrame || resized || (dirty && sinceBase > 3_000) || sinceBase > 60_000;
         if (needsBase) { dirty = false; forceBase = false; } // Mutations during capture remain dirty for the next pass.
         let frame: ScreenFrame;
-        if (needsBase) {
+        const share = shareRef.current;
+        const streamed = share ? captureStreamFrame(share.video) : null;
+        if (streamed) frame = streamed;
+        else if (needsBase) {
           frame = await captureLiveFrame();
           lastFrame = frame; lastBase = Date.now();
         } else {
@@ -189,7 +195,7 @@ export function SiteControl() {
           void ch.send({ type: "broadcast", event: "frame", payload: frame });
         }
       } catch { /* captureLiveFrame already falls back */ }
-      finally { busy = false; schedule(nextCaptureDelay(performance.now() - started)); }
+      finally { busy = false; schedule(shareRef.current ? 350 : nextCaptureDelay(performance.now() - started)); }
     };
     const refresh = () => { dirty = true; forceBase = true; last = ""; schedule(0); };
     ch.on("broadcast", { event: "control" }, ({ payload }) => {
@@ -199,7 +205,29 @@ export function SiteControl() {
       applyControl(payload as ControlEvent);
       requestAnimationFrame(refresh);
       setTimeout(refresh, 180);
-    }).on("broadcast", { event: "refresh" }, refresh).subscribe();
+    }).on("broadcast", { event: "refresh" }, refresh)
+      .on("broadcast", { event: "share-request" }, ({ payload }) => {
+        if (shareRef.current) { void ch.send({ type: "broadcast", event: "share-state", payload: { state: "sharing" } }); return; }
+        setShareAsk(String((payload as { name?: string })?.name ?? "Staff"));
+      })
+      .on("broadcast", { event: "share-stop" }, () => stopShare())
+      .subscribe();
+    const stopShare = () => {
+      shareRef.current?.stream.getTracks().forEach((t) => t.stop()); shareRef.current = null;
+      void ch.send({ type: "broadcast", event: "share-state", payload: { state: "stopped" } }); refresh();
+    };
+    answerRef.current = async (ok: boolean) => {
+      setShareAsk(null);
+      if (!ok) { void ch.send({ type: "broadcast", event: "share-state", payload: { state: "denied" } }); return; }
+      const stream = await startDisplayShare();
+      if (!stream || !live) { stream?.getTracks().forEach((t) => t.stop()); void ch.send({ type: "broadcast", event: "share-state", payload: { state: "denied" } }); return; }
+      const video = document.createElement("video");
+      video.muted = true; video.playsInline = true; video.srcObject = stream; void video.play().catch(() => {});
+      shareRef.current = { stream, video };
+      stream.getVideoTracks()[0]?.addEventListener("ended", stopShare);
+      void ch.send({ type: "broadcast", event: "share-state", payload: { state: "sharing" } });
+      schedule(300);
+    };
     const observer = new MutationObserver(markDirty);
     observer.observe(document.body, { subtree: true, childList: true, characterData: true });
     const visible = () => { if (!document.hidden) refresh(); };
@@ -215,6 +243,7 @@ export function SiteControl() {
       document.removeEventListener("visibilitychange", visible);
       window.removeEventListener("resize", markDirty);
       window.removeEventListener("scroll", markDirty, { capture: true });
+      shareRef.current?.stream.getTracks().forEach((t) => t.stop()); shareRef.current = null; setShareAsk(null);
       setControlled(false); void supabase.removeChannel(ch);
     };
   }, [viewId]);
@@ -228,6 +257,14 @@ export function SiteControl() {
     </div>
   );
   return <>
+    {shareAsk && <div data-screen-share="skip" role="alertdialog" aria-label="Screen share request" className="fixed bottom-4 right-4 z-[10030] w-80 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-2xl">
+      <p className="text-sm font-semibold">{shareAsk} wants you to share your screen</p>
+      <p className="mt-1 text-xs text-muted-foreground">If you accept, your browser asks which screen, window or tab to share. You can stop any time.</p>
+      <div className="mt-3 flex justify-end gap-2">
+        <button type="button" className="rounded-md border border-border px-3 py-1.5 text-sm" onClick={() => answerRef.current(false)}>Deny</button>
+        <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground" onClick={() => void answerRef.current(true)}>Accept</button>
+      </div>
+    </div>}
     {troll && !owner && <TrollLayer key={troll} troll={troll} onEnd={() => setTroll(null)} />}
     {viewing?.notify && <div data-screen-share="skip" className="fixed bottom-2 left-2 z-[9998] rounded-full bg-destructive px-3 py-1 text-xs text-destructive-foreground">{controlled ? `${viewing.name ?? "Staff"} is controlling your screen` : `${viewing.name ?? "Staff"} is viewing your screen`}</div>}
     {announce && (

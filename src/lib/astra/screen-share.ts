@@ -1,6 +1,6 @@
 /** Lightweight screen sharing: sends a layout outline (boxes, text, image links) instead of rendering pixels, so the shared tab stays fast. */
-export type ScreenItem = { x: number; y: number; w: number; h: number; bg?: string; c?: string; fs?: number; fw?: number; r?: string; t?: string; img?: string; media?: boolean; bd?: string; icon?: boolean };
-export type ScreenFrame = { w: number; h: number; path: string; bg: string; shot?: string; items: ScreenItem[]; mediaOnly?: boolean };
+export type ScreenItem = { x: number; y: number; w: number; h: number; bg?: string; c?: string; fs?: number; fw?: number; r?: string; t?: string; img?: string; media?: boolean; bd?: string; icon?: boolean; sub?: boolean };
+export type ScreenFrame = { w: number; h: number; path: string; bg: string; shot?: string; items: ScreenItem[]; mediaOnly?: boolean; screen?: boolean };
 export type ControlEvent = { type: "click"; x: number; y: number } | { type: "type"; text: string } | { type: "key"; key: string } | { type: "scroll"; x: number; y: number; dy: number };
 
 const MAX_ITEMS = 650;
@@ -66,22 +66,34 @@ export function captureFrame(): ScreenFrame {
   mediaShots = 0; svgChars = 0;
   const w = window.innerWidth, h = window.innerHeight;
   const items: ScreenItem[] = [];
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+  walkDoc(document, 0, 0, w, h, items, 0);
+  return { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor, items };
+}
+
+/** Draws same-origin pages (proxied web browser, arcade wrappers) as boxes/text, offset into the parent screen. */
+function walkDoc(doc: Document, ox: number, oy: number, w: number, h: number, items: ScreenItem[], depth: number, sub = false) {
+  const view = doc.defaultView; if (!view || !doc.body) return;
+  const getComputedStyle = view.getComputedStyle.bind(view);
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
   let el = walker.nextNode() as HTMLElement | null;
   while (el && items.length < MAX_ITEMS) {
     if (el.dataset?.["screenShare"] === "skip") { el = nextOutside(walker, el); continue; }
-    const r = el.getBoundingClientRect();
+    const b = el.getBoundingClientRect();
+    const r = { left: b.left + ox, top: b.top + oy, right: b.right + ox, bottom: b.bottom + oy, width: b.width, height: b.height };
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > h || r.left > w) {
       // Offscreen/collapsed: children of a zero box can still overflow, so only skip subtrees for hidden ones.
       if (r.width === 0 && r.height === 0 && el.childElementCount === 0) { el = nextOutside(walker, el); continue; }
       el = walker.nextNode() as HTMLElement | null; continue;
     }
     const tag = el.tagName;
-    const item: ScreenItem = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
+    const item: ScreenItem = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), ...(sub ? { sub: true } : {}) };
     if (tag === "VIDEO" || tag === "IFRAME" || tag === "CANVAS" || tag === "EMBED" || tag === "OBJECT") {
       const shot = mediaShots < MAX_MEDIA ? snapshotMedia(el) : undefined;
       if (shot) mediaShots++;
-      items.push({ ...item, media: true, ...(shot ? { img: shot } : {}) }); el = nextOutside(walker, el); continue;
+      if (!shot && tag === "IFRAME" && depth < 2 && innerDoc(el)) {
+        walkDoc(innerDoc(el)!, r.left, r.top, Math.min(w, r.right), Math.min(h, r.bottom), items, depth + 1, sub);
+      } else items.push({ ...item, media: true, ...(shot ? { img: shot } : {}) });
+      el = nextOutside(walker, el); continue;
     }
     const cs = getComputedStyle(el);
     if (cs.visibility === "hidden" || cs.opacity === "0" || cs.display === "none") { el = nextOutside(walker, el); continue; }
@@ -104,7 +116,10 @@ export function captureFrame(): ScreenFrame {
     if (keep) { if (cs.borderRadius !== "0px") item.r = cs.borderRadius; items.push(item); }
     el = walker.nextNode() as HTMLElement | null;
   }
-  return { w, h, path: location.pathname, bg: getComputedStyle(document.body).backgroundColor, items };
+}
+
+function innerDoc(el: HTMLElement): Document | null {
+  try { const d = (el as HTMLIFrameElement).contentDocument; return d?.body ? d : null; } catch { return null; }
 }
 
 let captureWarningShown = false;
@@ -113,22 +128,25 @@ let captureWarningShown = false;
 function captureMediaItems(frame: Pick<ScreenFrame, "w" | "h">): ScreenItem[] {
   mediaShots = 0;
   const items: ScreenItem[] = [];
+  const outline: ScreenItem[] = [];
   for (const el of document.body.querySelectorAll<HTMLElement>("video,iframe,canvas,embed,object")) {
     if (items.length >= MAX_MEDIA || el.closest("[data-screen-share='skip']")) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > frame.h || r.left > frame.w) continue;
     const item: ScreenItem = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), media: true };
     const shot = snapshotMedia(el);
-    if (shot) { item.img = shot; mediaShots++; }
+    if (shot) { item.img = shot; mediaShots++; items.push(item); continue; }
+    const doc = el.tagName === "IFRAME" ? innerDoc(el) : null;
+    if (doc) { svgChars = 0; walkDoc(doc, item.x, item.y, Math.min(frame.w, item.x + item.w), Math.min(frame.h, item.y + item.h), outline, 1, true); continue; }
     items.push(item);
   }
-  return items;
+  return [...items, ...outline.slice(0, MAX_ITEMS)];
 }
 
 /** Backs off when captures are expensive so screen viewing never competes with the visitor's own interactions. */
 export function nextCaptureDelay(captureMs: number): number {
-  if (!Number.isFinite(captureMs) || captureMs < 0) return 6000;
-  return Math.min(8000, Math.max(2200, Math.round(captureMs * 12)));
+  if (!Number.isFinite(captureMs) || captureMs < 0) return 4000;
+  return Math.min(5000, Math.max(900, Math.round(captureMs * 8)));
 }
 
 /** Cheap updates for animated media; the viewer keeps the last full picture underneath. */
@@ -171,7 +189,7 @@ export async function captureLiveFrame(): Promise<ScreenFrame> {
 
 function nextOutside(walker: TreeWalker, el: HTMLElement) {
   let n: Node | null = el;
-  while (n) { const s: Node | null = n.nextSibling; if (s) { walker.currentNode = s; return (s.nodeType === 1 ? s : walker.nextNode()) as HTMLElement | null; } n = n.parentNode; if (n === document.body) return null; }
+  while (n) { const s: Node | null = n.nextSibling; if (s) { walker.currentNode = s; return (s.nodeType === 1 ? s : walker.nextNode()) as HTMLElement | null; } n = n.parentNode; if (n === el.ownerDocument.body) return null; }
   return null;
 }
 
@@ -210,4 +228,25 @@ export function applyControl(ev: ControlEvent) {
     while (n && n !== document.body) { const s = getComputedStyle(n).overflowY; if ((s === "auto" || s === "scroll") && n.scrollHeight > n.clientHeight) break; n = n.parentElement; }
     (n && n !== document.body ? n : document.scrollingElement ?? document.body).scrollBy({ top: ev.dy });
   }
+}
+
+/** Full-screen share the visitor explicitly accepted: pixels from their chosen screen/window/tab. */
+export async function startDisplayShare(): Promise<MediaStream | null> {
+  try { return await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 10 }, audio: false }); }
+  catch { return null; }
+}
+
+let streamCanvas: HTMLCanvasElement | null = null;
+export function captureStreamFrame(video: HTMLVideoElement): ScreenFrame | null {
+  const sw = video.videoWidth, sh = video.videoHeight;
+  if (!sw || !sh) return null;
+  streamCanvas ??= document.createElement("canvas");
+  const width = Math.min(1280, sw), height = Math.round(width * sh / sw);
+  streamCanvas.width = width; streamCanvas.height = height;
+  streamCanvas.getContext("2d")!.drawImage(video, 0, 0, width, height);
+  for (const q of [0.6, 0.42, 0.28]) {
+    const shot = streamCanvas.toDataURL("image/jpeg", q);
+    if (shot.length < 235_000) return { w: width, h: height, path: "Whole screen (shared)", bg: "#000", shot, items: [], screen: true };
+  }
+  return null;
 }
