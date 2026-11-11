@@ -2,6 +2,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 type RawHeaders = [string, string][];
 const NULL_BODY = new Set([101, 103, 204, 205, 304]);
+// Transient upstream/edge failures worth a quick retry for video segments.
+const RETRY_STATUS = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
+// Video players fire hundreds of segment requests; reading the session for each one
+// added latency. Cache the token briefly and refresh it in the background.
+let tokenCache: { value: string; at: number } | null = null;
+async function relayAuthToken() {
+  if (tokenCache && Date.now() - tokenCache.at < 30_000) return tokenCache.value;
+  const { data } = await supabase.auth.getSession();
+  tokenCache = { value: data.session?.access_token ?? "guest", at: Date.now() };
+  return tokenCache.value;
+}
 
 /**
  * Proxy transport that sends every request to Astra's own server (/api/proxy),
@@ -18,22 +29,21 @@ export class AstraRelayTransport {
     for (let attempt = 0; ; attempt++) {
       try {
         const res = await this.once(remote, method, body, headers, signal);
-        if (retryable && attempt < 2 && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429)) {
+        if (retryable && attempt < 3 && RETRY_STATUS.has(res.status)) {
           void res.body?.cancel().catch(() => {});
-          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+          await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
           continue;
         }
         return res;
       } catch (err) {
-        if (!retryable || attempt >= 2 || signal?.aborted) throw err;
-        await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        if (!retryable || attempt >= 3 || signal?.aborted) throw err;
+        await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
       }
     }
   }
 
   private async once(remote: URL, method: string, body: BodyInit | null, headers: RawHeaders, signal: AbortSignal | undefined) {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token ?? "guest";
+    const token = await relayAuthToken();
     const payload = body == null || method === "GET" || method === "HEAD" ? new Uint8Array(0) : new Uint8Array(await new Response(body).arrayBuffer());
     const meta = new TextEncoder().encode(JSON.stringify({ url: remote.href, method, headers: Array.isArray(headers) ? headers : Object.entries(headers ?? {}) }));
     const framed = new Uint8Array(4 + meta.length + payload.length);

@@ -51,7 +51,7 @@ export const WEB_APPS: ToolApp[] = [
   { id: "crunchyroll", title: "Crunchyroll", category: "Entertainment", detail: "Anime streaming", tone: "coral", url: "https://www.crunchyroll.com/" },
   { id: "netflix", title: "Netflix", category: "Entertainment", detail: "Movies and series", tone: "rose", url: "https://www.netflix.com/" },
   { id: "tiktok", title: "TikTok", category: "Entertainment", detail: "Short videos", tone: "neutral", url: "https://www.tiktok.com/" },
-  { id: "discord", title: "Discord", category: "Social", detail: "Chat, voice and servers", tone: "violet", url: "https://discord.com/login" },
+  { id: "discord", title: "Discord", category: "Social", detail: "Chat, voice and servers", tone: "violet", url: "https://discord.com/app" },
   { id: "reddit", title: "Reddit", category: "Social", detail: "Communities and discussions", tone: "coral", url: "https://www.reddit.com/" },
   { id: "x", title: "X", category: "Social", detail: "Posts and trends", tone: "neutral", url: "https://x.com/" },
   { id: "instagram", title: "Instagram", category: "Social", detail: "Photos, reels and stories", tone: "rose", url: "https://www.instagram.com/" },

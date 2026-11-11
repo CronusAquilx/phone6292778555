@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ConsoleShell } from "./ConsoleShell";
 
 const additions = [
+  "Admin site controls: turn movie sources on/off, reorder them and set the default look",
+  "15 more personalization options: brightness, warm tint, color shift, fonts, line & word spacing, alignment, link underlines, uppercase headings, rounded pictures, typing cursor, picture style, button shape, shadows, borders",
   "5 more movie sources: VidSrc.xyz, VidSrc.pro, MoviesAPI, Vidora, RiveStream",
   "7 anime sites (Anikoto, HiAnime, AnimeKai, Miruro, 9Anime, AnimePahe, Kaido) shown only on anime",
   "12 new personalization options: cursor, color intensity, contrast, black & white, bold text, text glow, letter spacing, highlight color, scrollbars, animation speed, focus outline, smooth mode",
@@ -16,7 +18,8 @@ const additions = [
 ];
 
 const fixes = [
-  "Discord now uses the stronger proxy connection for sign-in",
+  "Discord login no longer loads forever: it opens the Discord app page on the regular proxy",
+  "Faster movie and anime loading with quicker retries for dropped video pieces",
   "Smoother desktop effects to reduce lag",
   "Movie sources switch to the next one faster when one stalls",
   "Anikoto now opens anikoto.ro",

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { MobileMenuButton } from "@/components/astra/AppShell";
 import { Switch } from "@/components/ui/switch";
+import { SiteControls } from "@/components/astra/SiteControls";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Dev dashboard \u2014 BirchBlock" }, { name: "description", content: "Manage BirchBlock model providers, tools and usage for developer accounts." }, { property: "og:title", content: "Dev dashboard \u2014 BirchBlock" }, { property: "og:description", content: "Manage BirchBlock model providers, tools and usage for developer accounts." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -85,6 +86,8 @@ function Admin() {
             <div key={l} className="rounded-lg border bg-card p-4"><div className="label-mono">{l}</div><div className="mt-1 text-2xl">{v}</div></div>
           ))}
         </section>
+
+        <SiteControls />
 
         <section className="space-y-3">
           <h2 className="text-lg font-medium">Connect an AI provider</h2>

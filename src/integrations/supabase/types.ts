@@ -370,6 +370,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_config: {
+        Row: {
+          data: Json
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       social_blocks: {
         Row: {
           target_id: string
