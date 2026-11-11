@@ -12,6 +12,26 @@ export class AstraRelayTransport {
   async init() { this.ready = true; }
 
   async request(remote: URL, method: string, body: BodyInit | null, headers: RawHeaders, signal: AbortSignal | undefined) {
+    // Video players fetch many small segments; one dropped relay request used to
+    // stall playback. Retry idempotent reads (GET/HEAD) on transient failures.
+    const retryable = method === "GET" || method === "HEAD";
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await this.once(remote, method, body, headers, signal);
+        if (retryable && attempt < 2 && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429)) {
+          void res.body?.cancel().catch(() => {});
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+          continue;
+        }
+        return res;
+      } catch (err) {
+        if (!retryable || attempt >= 2 || signal?.aborted) throw err;
+        await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+      }
+    }
+  }
+
+  private async once(remote: URL, method: string, body: BodyInit | null, headers: RawHeaders, signal: AbortSignal | undefined) {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token ?? "guest";
     const payload = body == null || method === "GET" || method === "HEAD" ? new Uint8Array(0) : new Uint8Array(await new Response(body).arrayBuffer());
