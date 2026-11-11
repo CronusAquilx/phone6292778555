@@ -282,7 +282,6 @@ function Watch() {
             </>}
           </div>}
           {isAnime && !school && <div className="mt-3 flex flex-wrap gap-2">
-            {ANIME_SEARCH_SITES.map(site => <Button key={site.id} variant="outline" size="sm" onClick={() => { setManualSource(true); setServerRaw(site.id); }}>{site.name}</Button>)}
             {n === 663558 && !isTV && <Button asChild variant="outline" size="sm"><a href="https://www.netflix.com/title/81418302" target="_blank" rel="noopener noreferrer">English on Netflix · subscription required</a></Button>}
           </div>}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -324,8 +323,12 @@ function Watch() {
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
               <Select value={category} onValueChange={(value) => setCategory(value as ServerCategory | "all")}><SelectTrigger aria-label="Server category"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{SERVER_CATEGORIES.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>
-              <Select value={server} onValueChange={value => { setManualSource(true); setServer(value); }}><SelectTrigger aria-label="Streaming server"><SelectValue /></SelectTrigger><SelectContent>{filteredServers.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}{isAnime && ANIME_SEARCH_SITES.map(site => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent></Select>
+              <Select value={server} onValueChange={value => { setManualSource(true); setServer(value); }}><SelectTrigger aria-label="Streaming server"><SelectValue /></SelectTrigger><SelectContent>{filteredServers.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>
             </div>
+            {isAnime && <div className="mt-5">
+              <h2 className="font-display text-2xl">Anime sources</h2><p className="text-xs text-muted-foreground">Dedicated anime sites, separate from movie sources.</p>
+              <Select value={animeSite ? server : ""} onValueChange={value => { setManualSource(true); setServerRaw(value); }}><SelectTrigger aria-label="Anime source" className="mt-3 sm:max-w-sm"><SelectValue placeholder="Choose an anime source" /></SelectTrigger><SelectContent>{ANIME_SEARCH_SITES.map(site => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent></Select>
+            </div>}
           </section>}
         </>}
       </div>

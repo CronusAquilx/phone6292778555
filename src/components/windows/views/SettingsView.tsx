@@ -27,7 +27,7 @@ import { SeasonalThemePicker } from "@/components/astra/SeasonalThemePicker";
 
 const TABS = ["Home", "Layout", "Appearance", "Essences", "Proxy", "Privacy", "AI", "Developer"] as const;
 const TAB_ICONS = { Home, Layout: Monitor, Appearance: Palette, Essences: Sparkles, Proxy: Globe, Privacy: Shield, AI: Bot, Developer: Gamepad2 };
-const TAB_LABELS = { Home: "Home", Layout: "System", Appearance: "Personalization", Essences: "Accessibility", Proxy: "Network & internet", Privacy: "Privacy & security", AI: "BirchBlock AI", Developer: "Developer games" };
+const TAB_LABELS = { Home: "Home", Layout: "System", Appearance: "Personalization", Essences: "Accessibility", Proxy: "Network & internet", Privacy: "Privacy & security", AI: "BirchBlock AI", Developer: "Developer & admin" };
 type TabName = (typeof TABS)[number];
 
 const UA_GROUPS: Record<string, string[]> = {
@@ -235,7 +235,7 @@ export function SettingsView() {
         )}
 
         {tab === "AI" && <AISettings />}
-        {tab === "Developer" && <div className="space-y-6"><LiveVisitorsPanel />{devGames ? <DeveloperGameSettings /> : null}</div>}
+        {tab === "Developer" && <div className="space-y-6">{(staffRole === "owner" || staffRole === "developer") && <div className="flex items-center justify-between gap-4 rounded-lg border bg-card/40 px-4 py-3"><div><div className="text-sm font-medium">Admin panel</div><div className="text-xs text-muted-foreground">Change sources, default look and layout for everyone.</div></div><Button size="sm" onClick={() => void navigate({ to: "/admin" })}><Shield />Open admin panel</Button></div>}<LiveVisitorsPanel />{devGames ? <DeveloperGameSettings /> : null}</div>}
         </div>
       </div>
     </div>

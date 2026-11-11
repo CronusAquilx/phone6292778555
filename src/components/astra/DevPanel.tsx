@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Delete } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Delete, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { checkDevPin, devSignIn } from "@/lib/astra/dev-access.functions";
 export function DevPanel({ open, onOpenChange, onSignedIn }: { open: boolean; onOpenChange: (o: boolean) => void; onSignedIn: () => Promise<void> }) {
   const [pin, setPin] = useState(""); const [unlocked, setUnlocked] = useState(false); const [accounts, setAccounts] = useState<string[]>([]);
   const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const navigate = useNavigate();
   const check = useServerFn(checkDevPin); const signIn = useServerFn(devSignIn);
   useEffect(() => { if (!open) { setPin(""); setUnlocked(false); setError(""); } }, [open]);
 
@@ -33,20 +35,21 @@ export function DevPanel({ open, onOpenChange, onSignedIn }: { open: boolean; on
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
   });
 
-  async function choose(account: string) {
+  async function choose(account: string, toAdmin = false) {
     setBusy(true); setError("");
     try {
       const r = await signIn({ data: { account, code: pin } });
       if (!r.ok) throw new Error(r.error);
       const v = await supabase.auth.verifyOtp({ token_hash: r.tokenHash, type: "magiclink" }); if (v.error) throw v.error;
       onOpenChange(false); await onSignedIn();
+      if (toAdmin) await navigate({ to: "/admin" });
     } catch (e) { setError(e instanceof Error ? e.message : "Couldn't sign in"); } finally { setBusy(false); }
   }
 
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="max-w-xs">
       <DialogHeader><DialogTitle>{unlocked ? "Choose account" : "Enter code"}</DialogTitle><DialogDescription>{unlocked ? "Pick an account to continue." : "Enter the 4-digit code."}</DialogDescription></DialogHeader>
-      {unlocked ? <div className="grid gap-3">{accounts.map(a => <Button key={a} disabled={busy} onClick={() => void choose(a)}>{a.charAt(0).toUpperCase() + a.slice(1)}{a === "qais" ? " (Owner)" : ""}</Button>)}</div> : <>
+      {unlocked ? <div className="grid gap-3">{accounts.map(a => <div key={a} className="flex gap-2"><Button className="flex-1" disabled={busy} onClick={() => void choose(a)}>{a.charAt(0).toUpperCase() + a.slice(1)}{a === "qais" ? " (Owner)" : ""}</Button><Button variant="outline" disabled={busy} aria-label={`Sign in as ${a} and open admin panel`} onClick={() => void choose(a, true)}><ShieldCheck />Admin</Button></div>)}</div> : <>
         <div className="flex justify-center gap-3 py-2" aria-label={`${pin.length} of 4 digits entered`}>{[0, 1, 2, 3].map(i => <span key={i} className={`size-3 rounded-full border border-foreground ${i < pin.length ? "bg-foreground" : ""}`} />)}</div>
         <div className="grid grid-cols-3 gap-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(d => <Button key={d} variant="outline" className="h-14 text-xl" disabled={busy} onClick={() => void press(d)}>{d}</Button>)}
