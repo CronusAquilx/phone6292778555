@@ -67,3 +67,4 @@
 - YouTube uses a shared proxy-only WebView in desktop windows and a leaf route in other shells; reuse popup interception and complete-site transport rather than direct embeds so every layout retains the same browser behavior.
 - Store web apps are `WEB_APPS` entries (with `url`) in the shared tool catalog, opened as proxied app-mode WebViews; desktop icon order is per-layout device storage via useIconOrder, and the mini player is one root-mounted floating proxied frame used when native video picture-in-picture is unavailable.
 - Desktop stores separate WEB_APPS from built-ins/TOOL_APPS; Library composes useLauncherApps and account home visibility. useIconOrder persists fixed screen coordinates and removal tombstones per device/layout so catalog changes cannot reflow existing apps and re-added icons start centered.
+- Movie embeds load directly in the iframe (not proxied) because proxy re-streaming of HLS segments stalls playback.

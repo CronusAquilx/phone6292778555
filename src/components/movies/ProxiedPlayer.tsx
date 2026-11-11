@@ -51,9 +51,12 @@ export function ProxiedPlayer({ src, title, onLoad, onError, anime = false, voic
     let first = true;
     const target = new URL(src, window.location.origin);
     const local = target.origin === window.location.origin;
-    const loaded = () => { if (first && (local || iframe.src.includes("/scramjet/p/"))) { first = false; loadRef.current?.(); } };
+    // Movie embed hosts are built to be iframed; loading them directly avoids the
+    // proxy re-streaming video segments, which caused random stalls/disconnects.
+    const direct = local || /^https?:$/.test(target.protocol);
+    const loaded = () => { if (first) { first = false; loadRef.current?.(); } };
     iframe.addEventListener("load", loaded);
-    if (local) {
+    if (direct) {
       iframe.src = target.href;
       return () => { iframe.removeEventListener("load", loaded); iframe.src = "about:blank"; };
     }
