@@ -11,7 +11,7 @@ import { myRoomId, setRoomState, useRoom } from "@/lib/rooms";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { nextVoiceSource } from "@/lib/movies/voice-search";
-import { anikotoSearchUrl, hianimeSearchUrl, animeIcuVoiceUrl, animeVoiceUrl, supportsAnimationSources, type AnimeMatch } from "@/lib/movies/anime-sources";
+import { ANIME_SEARCH_SITES, anikotoSearchUrl, hianimeSearchUrl, animeIcuVoiceUrl, animeVoiceUrl, supportsAnimationSources, type AnimeMatch } from "@/lib/movies/anime-sources";
 
 const CAPTIONS = [
   ["off", "Off"], ["en", "English"], ["es", "Spanish"], ["fr", "French"],
@@ -230,10 +230,11 @@ function Watch() {
   const filteredServers = category === "all" ? STREAMING_SERVERS : STREAMING_SERVERS.filter((item) => item.category === category);
   const usingAnimeSource = server === 'anime-vidlink' && animeId !== null && voice !== 'auto';
   const usingIcuAnime = server === 'anime-icu' && anilistId !== null && voice !== 'auto';
-  const usingHianime = server === 'hianime';
-  const usingAnikoto = server === 'anikoto' || usingHianime;
-  const sourceName = usingHianime ? 'HiAnime' : usingAnikoto ? 'Anikoto' : usingAnimeSource ? 'VidLink Anime' : usingIcuAnime ? 'VidSrc.icu Anime' : s.name;
-  const baseUrl = usingHianime ? hianimeSearchUrl(d?.title || d?.name || '') : usingAnikoto ? anikotoSearchUrl(d?.title || d?.name || '') : usingAnimeSource ? animeVoiceUrl(animeId, episode, voice === 'en' ? 'en' : 'ja') : usingIcuAnime ? animeIcuVoiceUrl(anilistId, episode, voice === 'en' ? 'en' : 'ja') : s.url(n, type, isTV ? season : undefined, isTV ? episode : undefined);
+  const animeSite = ANIME_SEARCH_SITES.find(site => site.id === server);
+  const usingHianime = false;
+  const usingAnikoto = Boolean(animeSite);
+  const sourceName = animeSite ? animeSite.name : usingAnimeSource ? 'VidLink Anime' : usingIcuAnime ? 'VidSrc.icu Anime' : s.name;
+  const baseUrl = animeSite ? animeSite.search(d?.title || d?.name || '') : usingAnimeSource ? animeVoiceUrl(animeId, episode, voice === 'en' ? 'en' : 'ja') : usingIcuAnime ? animeIcuVoiceUrl(anilistId, episode, voice === 'en' ? 'en' : 'ja') : s.url(n, type, isTV ? season : undefined, isTV ? episode : undefined);
   const directUrl = `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}autoplay=1${caption !== "off" ? `&sub_lang=${caption}` : ""}${startAt ? `&startAt=${startAt}&progress=${startAt}&t=${startAt}&start=${startAt}` : ""}`;
   const embedUrl = usingAnikoto ? baseUrl : directUrl;
 
@@ -281,8 +282,7 @@ function Watch() {
             </>}
           </div>}
           {isAnime && !school && <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setManualSource(true); setServerRaw('anikoto'); }}>Anikoto</Button>
-            <Button variant="outline" size="sm" onClick={() => { setManualSource(true); setServerRaw('hianime'); }}>HiAnime</Button>
+            {ANIME_SEARCH_SITES.map(site => <Button key={site.id} variant="outline" size="sm" onClick={() => { setManualSource(true); setServerRaw(site.id); }}>{site.name}</Button>)}
             {n === 663558 && !isTV && <Button asChild variant="outline" size="sm"><a href="https://www.netflix.com/title/81418302" target="_blank" rel="noopener noreferrer">English on Netflix · subscription required</a></Button>}
           </div>}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -324,7 +324,7 @@ function Watch() {
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
               <Select value={category} onValueChange={(value) => setCategory(value as ServerCategory | "all")}><SelectTrigger aria-label="Server category"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{SERVER_CATEGORIES.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select>
-              <Select value={server} onValueChange={value => { setManualSource(true); setServer(value); }}><SelectTrigger aria-label="Streaming server"><SelectValue /></SelectTrigger><SelectContent>{filteredServers.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}{isAnime && <SelectItem value="anikoto">Anikoto</SelectItem>}{isAnime && <SelectItem value="hianime">HiAnime</SelectItem>}</SelectContent></Select>
+              <Select value={server} onValueChange={value => { setManualSource(true); setServer(value); }}><SelectTrigger aria-label="Streaming server"><SelectValue /></SelectTrigger><SelectContent>{filteredServers.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}{isAnime && ANIME_SEARCH_SITES.map(site => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent></Select>
             </div>
           </section>}
         </>}

@@ -1672,3 +1672,24 @@ html[data-season]:has(video:fullscreen, iframe:fullscreen) .seasonal-experience 
 .store-app h3 { overflow-wrap: anywhere; }
 @media (max-width: 760px) { .mac-desktop-icons { display: grid; right: 8px; grid-template-rows: repeat(5, 76px); grid-auto-columns: 76px; } }
 @media (max-width: 639px) { .windows-shortcuts { display: grid; grid-template-rows: repeat(5, 70px); grid-auto-columns: 76px; } }
+
+/* Look extras (device-level personalization) */
+html[data-extras-filter="on"] body { filter: var(--extras-filter, none); }
+html { letter-spacing: var(--extras-letter, normal); }
+html[data-cursor="large"], html[data-cursor="large"] * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M2 2l11 28 4-12 12-4z' fill='black' stroke='white' stroke-width='2'/%3E%3C/svg%3E") 2 2, auto; }
+html[data-cursor="pointer-dot"], html[data-cursor="pointer-dot"] * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='8' r='5' fill='white' stroke='black' stroke-width='2'/%3E%3C/svg%3E") 8 8, auto; }
+html[data-text-shadow="on"] body { text-shadow: 0 0 6px color-mix(in oklab, var(--star, currentColor) 45%, transparent); }
+html[data-bold-text="on"] body { font-weight: 600; }
+html[data-selection="accent"] ::selection { background: color-mix(in oklab, var(--star, var(--ring)) 45%, transparent); }
+html[data-selection="pink"] ::selection { background: oklch(0.75 0.17 350 / 0.55); }
+html[data-selection="lime"] ::selection { background: oklch(0.88 0.2 128 / 0.55); }
+html[data-selection="orange"] ::selection { background: oklch(0.78 0.17 55 / 0.55); }
+html[data-scrollbars="thin"] * { scrollbar-width: thin; }
+html[data-scrollbars="hidden"] * { scrollbar-width: none; }
+html[data-scrollbars="hidden"] *::-webkit-scrollbar { display: none; }
+html[data-anim-speed="slow"] * { animation-duration: calc(var(--tw-duration, 1s) * 1.6); }
+html[data-anim-speed="fast"] *, html[data-anim-speed="fast"] *::before, html[data-anim-speed="fast"] *::after { transition-duration: 120ms !important; }
+html[data-focus-ring="bold"] :focus-visible { outline: 3px solid var(--ring) !important; outline-offset: 3px; }
+html[data-smooth="on"] * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+/* Lag: keep effect canvases on their own layer so repaints don't touch the page */
+.wallpaper-effects, .seasonal-particles { contain: strict; transform: translateZ(0); }

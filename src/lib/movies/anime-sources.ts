@@ -26,3 +26,14 @@ export function animeVoiceUrl(malId: number, episode: number, voice: 'en' | 'ja'
 export function animeIcuVoiceUrl(anilistId: number, episode: number, voice: 'en' | 'ja'): string {
   return `https://vidsrc.icu/embed/anime/${anilistId}/${episode}/${voice === 'en' ? 1 : 0}`;
 }
+
+/** Real anime site searches, opened through the proxy. Shown only for anime titles. */
+export const ANIME_SEARCH_SITES = [
+  { id: 'anikoto', name: 'Anikoto', search: (q: string) => anikotoSearchUrl(q) },
+  { id: 'hianime', name: 'HiAnime', search: (q: string) => hianimeSearchUrl(q) },
+  { id: 'animekai', name: 'AnimeKai', search: (q: string) => `https://animekai.to/browser?keyword=${encodeURIComponent(q.trim())}` },
+  { id: 'miruro', name: 'Miruro', search: (q: string) => `https://www.miruro.to/search?query=${encodeURIComponent(q.trim())}` },
+  { id: '9anime', name: '9Anime', search: (q: string) => `https://9animetv.to/search?keyword=${encodeURIComponent(q.trim())}` },
+  { id: 'animepahe', name: 'AnimePahe', search: (q: string) => `https://animepahe.ru/?q=${encodeURIComponent(q.trim())}` },
+  { id: 'kaido', name: 'Kaido', search: (q: string) => `https://kaido.to/search?keyword=${encodeURIComponent(q.trim())}` },
+] as const;

@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { ConsoleShell } from "./ConsoleShell";
 
 const additions = [
+  "5 more movie sources: VidSrc.xyz, VidSrc.pro, MoviesAPI, Vidora, RiveStream",
+  "7 anime sites (Anikoto, HiAnime, AnimeKai, Miruro, 9Anime, AnimePahe, Kaido) shown only on anime",
+  "12 new personalization options: cursor, color intensity, contrast, black & white, bold text, text glow, letter spacing, highlight color, scrollbars, animation speed, focus outline, smooth mode",
   "New working movie sources, ordered fastest first, plus a HiAnime anime source",
   "Home / At school choice for Movies in Personalization",
   "PNG/GIF backgrounds and MP3 imports in Personalization",
@@ -13,6 +16,8 @@ const additions = [
 ];
 
 const fixes = [
+  "Discord now uses the stronger proxy connection for sign-in",
+  "Smoother desktop effects to reduce lag",
   "Movie sources switch to the next one faster when one stalls",
   "Anikoto now opens anikoto.ro",
   "Web apps get an Open directly button for sign-ins and captchas that block proxies",

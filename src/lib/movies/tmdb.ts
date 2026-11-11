@@ -179,6 +179,11 @@ export const STREAMING_SERVERS: StreamingServer[] = [
   { id: 'vidsrcicu', name: 'VidSrc.icu', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://vidsrc.icu/embed/tv/${id}/${s}/${e}` : `https://vidsrc.icu/embed/movie/${id}` },
   { id: 'twoembed', name: '2Embed', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` : `https://www.2embed.cc/embed/${id}` },
   { id: '111movies', name: '111Movies', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://111movies.com/tv/${id}/${s}/${e}` : `https://111movies.com/movie/${id}` },
+  { id: 'vidsrcxyz', name: 'VidSrc.xyz', category: 'multi', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${s}&episode=${e}` : `https://vidsrc.xyz/embed/movie?tmdb=${id}` },
+  { id: 'vidsrcpro', name: 'VidSrc.pro', category: 'multi', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://vidsrc.pro/embed/tv/${id}/${s}/${e}` : `https://vidsrc.pro/embed/movie/${id}` },
+  { id: 'moviesapi', name: 'MoviesAPI', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://moviesapi.club/tv/${id}-${s}-${e}` : `https://moviesapi.club/movie/${id}` },
+  { id: 'vidora', name: 'Vidora', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://vidora.su/tv/${id}/${s}/${e}` : `https://vidora.su/movie/${id}` },
+  { id: 'rivestream', name: 'RiveStream', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://rivestream.org/embed?type=tv&id=${id}&season=${s}&episode=${e}` : `https://rivestream.org/embed?type=movie&id=${id}` },
   { id: 'apiplayer', name: 'APIPlayer', category: 'backup', url: (id, type = 'movie', s, e) => type === 'tv' && s && e ? `https://apiplayer.ru/embed/tv/${id}/${s}/${e}` : `https://apiplayer.ru/embed/${type}/${id}` },
 ];
 

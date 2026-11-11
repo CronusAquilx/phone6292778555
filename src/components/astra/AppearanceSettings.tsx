@@ -12,6 +12,7 @@ import landscape from "@/assets/console-landscape.jpg";
 import { WallpaperUpload } from "./WallpaperUpload";
 import { MusicUpload } from "./MusicUpload";
 import { WatchModeSetting } from "./WatchModeSetting";
+import { LookExtrasControls } from "./LookExtras";
 import classicWallpaper from "@/assets/launcher-wallpaper.jpg";
 import windowsWallpaper from "@/assets/windows-wallpaper.jpg";
 import alpineWallpaper from "@/assets/alpine-wallpaper.jpg";
@@ -52,6 +53,7 @@ export function AppearanceSettings() {
     <Setting label="PNG / GIF background"><WallpaperUpload key={layout} layout={layout}/></Setting>
     <Setting label="MP3 music"><MusicUpload key={`music-${layout}`}/></Setting>
     <Setting label="Movies location"><WatchModeSetting/></Setting>
+    <LookExtrasControls/>
     <WallpaperCatalog key={`catalog-${layout}`} layout={layout}/>
     {!consoleMode && <div className="grid grid-cols-2 gap-3 border-b py-4 sm:grid-cols-4">{[{name:"Classic lake",url:classicWallpaper,type:"image" as const,preview:classicWallpaper},{name:"Windows waves",url:windowsWallpaper,type:"image" as const,preview:windowsWallpaper},{name:"Alpine daylight",url:alpineWallpaper,type:"image" as const,preview:alpineWallpaper},{name:"Alpine motion",url:alpineMotion.url,type:"video" as const,preview:alpineWallpaper}].map(item=><Button key={item.name} variant="ghost" className="h-auto flex-col gap-2 p-1" aria-label={`Use ${item.name} wallpaper`} onClick={()=>set({customBg:item.url,wallpaperType:item.type,artwork:true})}><img src={item.preview} alt="" loading="lazy" width={160} height={90} className="aspect-video w-full rounded object-cover"/><span className="text-xs">{item.name}</span></Button>)}</div>}
 

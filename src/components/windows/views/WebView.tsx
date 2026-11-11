@@ -23,7 +23,7 @@ export function WebView({ initialQ, initialSite, proxyOnly = false, app = false,
   const search = useServerFn(webSearch);
   const prefs = usePrefs();
   // Streaming needs browser-native TLS and online requests, not the basic HTTP relay.
-  const framePrefs = proxyOnly && /youtube\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
+  const framePrefs = proxyOnly && /(youtube|discord)\.com/.test(initialSite ?? "") && prefs.transport === "astra" ? { ...prefs, transport: "libcurl" as const } : prefs;
   const native = (prefs.layout === "windows" || prefs.layout === "windows2") || prefs.console === "sony" || prefs.console === "series";
   const [tabs, setTabs] = useState<Tab[]>(() => [blank()]);
   const [active, setActive] = useState(tabs[0]?.id ?? 1);

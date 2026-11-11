@@ -5,8 +5,8 @@ import { anikotoSearchUrl, animeIcuVoiceUrl, animeVoiceUrl } from "./anime-sourc
 
 describe("imported movie source routing", () => {
   it("lists eleven external sources, fastest first, keeping school-safe APIPlayer", () => {
-    expect(STREAMING_SERVERS).toHaveLength(11);
-    expect(new Set(STREAMING_SERVERS.map(source => source.id)).size).toBe(11);
+    expect(STREAMING_SERVERS).toHaveLength(16);
+    expect(new Set(STREAMING_SERVERS.map(source => source.id)).size).toBe(16);
     expect(STREAMING_SERVERS[0]?.id).toBe("vidlink");
     expect(STREAMING_SERVERS.some(source => source.id === "apiplayer")).toBe(true);
     for (const source of STREAMING_SERVERS) {

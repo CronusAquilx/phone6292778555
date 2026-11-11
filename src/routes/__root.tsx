@@ -18,6 +18,7 @@ import { VisitProvider } from "@/lib/console/visit";
 import { VisitGate } from "@/components/console/VisitGate";
 import { AuthProvider } from "@/lib/auth";
 import { SeasonalExperience } from "@/components/astra/SeasonalExperience";
+import { LookExtrasApplier } from "@/components/astra/LookExtras";
 import { ClientOnly } from "@tanstack/react-router";
 const MiniPlayer = lazy(() => import("@/components/astra/MiniPlayer"));
 
@@ -119,6 +120,7 @@ function RootComponent() {
         <VisitProvider>
           <div id="site-content" className="h-dvh w-full"><VisitGate><Outlet /></VisitGate></div>
           <SeasonalExperience />
+          <LookExtrasApplier />
           <ClientOnly><Suspense fallback={null}><MiniPlayer /></Suspense></ClientOnly>
         </VisitProvider>
         <SiteControl />
