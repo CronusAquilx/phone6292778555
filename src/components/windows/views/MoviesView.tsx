@@ -97,7 +97,7 @@ export function MoviesView() {
   return (
     <div className="movies-application h-full overflow-y-auto">
       <WatchModePrompt />
-      <header className="movies-app-header sticky top-0 z-20 grid h-16 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur sm:px-6">
+      <header className="movies-app-header sticky top-0 z-20 grid h-16 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border bg-background/95 px-3 sm:px-6">
         <MobileMenuButton />
         {native && <><div className="native-app-wordmark"><Film/><span>Birch Cinema</span></div><nav aria-label="Cinema navigation" className="cinema-navigation">{(["home", "movies", "shows", "list"] as const).map(c => <Button key={c} variant="ghost" aria-pressed={category === c} onClick={() => { setCategory(c); setQ(""); setGenre(null); }}>{c === "list" ? "My List" : c === "shows" ? "TV Shows" : c === "movies" ? "Movies" : "Home"}</Button>)}</nav></>}
         <div className="relative flex-1 max-w-md">
