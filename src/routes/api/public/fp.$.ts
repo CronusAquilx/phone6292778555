@@ -20,10 +20,23 @@ const ISOLATION = {
   "access-control-expose-headers": "Content-Range, Content-Length, Accept-Ranges, X-Run-Lengths",
 };
 
+/** Build workers concatenate a build base with dynamically selected root-like filenames. */
+export function fiveplayUpstreamPath(path: string): string {
+  return path.replace(/^(\/b\/[a-z0-9_-]+)\/api\/public\/fp\//i, "$1/");
+}
+
 /** Keep V2's launcher, UI, engine and data URLs inside the tuned relay. */
 export function rewriteFiveplay(text: string, html: boolean): string {
   let out = text.replace(/(?:https?:)?\/\/(?:v2\.|www\.)?fiveplay\.lol(?=[/"'`?#\s]|$)/gi, PREFIX);
-  out = out.replace(/(['"`])\/(?!\/|api\/public\/fp(?:\/|["'`?#]))/g, `$1${PREFIX}/`);
+  // Match complete path literals, not quotes inside regular expressions. BASE + '/loader.js'
+  // already inherits the rewritten build prefix and must not gain a second relay prefix.
+  out = out.replace(/(['"`])(\/[a-zA-Z0-9_-][^'"`\r\n]*?)\1/g, (match, quote: string, path: string, offset: number, input: string) => {
+    const before = input.slice(Math.max(0, offset - 60), offset);
+    // Engine filesystem paths (/userdata, /dev, /proc, etc.) are not HTTP URLs.
+    if (!/^\/(?:b\/|data\/|touch_art\/|branding\/|log(?:[?#]|$)|shot\?)/.test(path) && !/\.(?:js|wasm|css|png|jpe?g|webp|svg|woff2?|mp[34]|ogg|webm)(?:[?#]|$)/i.test(path)) return match;
+    if (path.startsWith(`${PREFIX}/`) || (/\+\s*$/.test(before) && !/\.origin\s*\+\s*$/.test(before))) return match;
+    return `${quote}${PREFIX}${path}${quote}`;
+  });
   out = out.replace(/(url\(\s*)\/(?!\/|api\/public\/fp\/)/gi, `$1${PREFIX}/`);
   if (html) {
     out = out.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (tag) => (/quge5\.com|alwingulla\.com/i.test(tag) ? "" : tag));
@@ -35,7 +48,7 @@ export function rewriteFiveplay(text: string, html: boolean): string {
 async function relay(request: Request): Promise<Response> {
   const url = new URL(request.url);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: ISOLATION });
-  const path = url.pathname.slice(PREFIX.length) || "/";
+  const path = fiveplayUpstreamPath(url.pathname.slice(PREFIX.length) || "/");
   if (path.split("/").some((s) => s === ".." || s === ".")) return new Response("Not found", { status: 404, headers: ISOLATION });
   // The data loader POSTs batched block lists to /data/batch; other POSTs (logs) and screenshots are diagnostics.
   const isBatch = request.method === "POST" && path.startsWith("/data/batch");
@@ -56,7 +69,8 @@ async function relay(request: Request): Promise<Response> {
   const type = (upstream.headers.get("content-type") ?? "").toLowerCase();
   const isHtml = type.includes("text/html");
   const isJs = type.includes("javascript");
-  if ((isHtml || isJs) && request.method !== "HEAD" && upstream.status === 200) {
+  const isCss = type.includes("text/css");
+  if ((isHtml || isJs || isCss) && request.method !== "HEAD" && upstream.status === 200) {
     const body = rewriteFiveplay(await upstream.text(), isHtml);
     if (isHtml) headers.set("cache-control", "no-store");
     return new Response(body, { status: 200, headers });
