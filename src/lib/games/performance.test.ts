@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { gameRelayUrl } from "./performance";
 
 describe("verified game performance profiles", () => {
+  it("launches the updated FivePlay V2 through the GTA relay", () => {
+    expect(gameRelayUrl("https://v2.fiveplay.lol/", "native")).toBe("/api/public/fp/");
+    expect(gameRelayUrl("https://v2.fiveplay.lol/launcher.html", "balanced")).toBe("/api/public/fp/launcher.html?scale=0.85&fps=60");
+    expect(gameRelayUrl("https://v2.fiveplay.lol.attacker.test/", "native")).toBeNull();
+  });
   it("uses FivePlay's lower-resolution and lower-detail controls", () => {
     const result = new URL(gameRelayUrl("https://fiveplay.lol/?trace=1&newgame=1", "performance") || "", "https://app.test");
     expect(result.searchParams.get("scale")).toBe("0.75");

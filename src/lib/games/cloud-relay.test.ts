@@ -31,6 +31,7 @@ describe("cloud game relay", () => {
   });
   it("keeps GTA V on its tuned relay", () => {
     expect(cloudRelayUrl("https://fiveplay.lol/")).toBeNull();
+    expect(cloudRelayUrl("https://v2.fiveplay.lol/launcher.html")).toBeNull();
   });
   it("points root-relative game files at the relay", () => {
     const html = rewriteRelayText('<script src="/b/main.js"></script><img src="https://csjs.live/x.png">', "/api/public/cg/https/csjs.live", "html", "csjs.live");
