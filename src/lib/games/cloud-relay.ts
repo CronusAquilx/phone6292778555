@@ -10,7 +10,7 @@ import { CLOUD_GAMES } from "./cloud-catalog";
 export const CLOUD_RELAY_PREFIX = "/api/public/cg";
 
 /** GTA V keeps its own tuned relay. */
-const OWN_RELAY = ["fiveplay.lol", "www.fiveplay.lol", "v2.fiveplay.lol", "gta.deloskiyt.pl"];
+const OWN_RELAY = ["fiveplay.lol", "www.fiveplay.lol", "gta.deloskiyt.pl"];
 /** Account-based streaming services need their multi-site sign-in, which only the full proxy carries. */
 const ACCOUNT_SERVICES = ["www.xbox.com", "xbox.com", "play.geforcenow.com", "now.gg", "cloud.boosteroid.com", "luna.amazon.com"];
 // Retrora derives account redirects and online match sockets from its original hostname.

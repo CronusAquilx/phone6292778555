@@ -6,7 +6,7 @@ export type GameQuality = "performance" | "balanced" | "native";
 export function gameRelayUrl(url: string, quality: GameQuality): string | null {
   let source: URL;
   try { source = new URL(url); } catch { return null; }
-  if (!["fiveplay.lol", "www.fiveplay.lol", "v2.fiveplay.lol", "gta.deloskiyt.pl"].includes(source.hostname)) return null;
+  if (!["fiveplay.lol", "www.fiveplay.lol", "gta.deloskiyt.pl"].includes(source.hostname)) return null;
   const search = new URLSearchParams(source.search);
   if (quality !== "native") {
     search.set("scale", quality === "performance" ? "0.75" : "0.85");
