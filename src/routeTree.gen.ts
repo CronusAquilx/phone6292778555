@@ -36,6 +36,7 @@ import { Route as ApiProxyRouteImport } from './routes/api/proxy'
 import { Route as ApiSpeechRouteImport } from './routes/api/speech'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiVoiceReplyRouteImport } from './routes/api/voice-reply'
+import { Route as GoCodeRouteImport } from './routes/go.$code'
 import { Route as AuthenticatedAppIdRouteImport } from './routes/_authenticated/app.$id'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
@@ -192,6 +193,11 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
 const ApiVoiceReplyRoute = ApiVoiceReplyRouteImport.update({
   id: '/api/voice-reply',
   path: '/api/voice-reply',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoCodeRoute = GoCodeRouteImport.update({
+  id: '/go/$code',
+  path: '/go/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppIdRoute = AuthenticatedAppIdRouteImport.update({
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/go/$code': typeof GoCodeRoute
   '/app/$id': typeof AuthenticatedAppIdRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/console/apps': typeof AuthenticatedConsoleAppsRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/go/$code': typeof GoCodeRoute
   '/app/$id': typeof AuthenticatedAppIdRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/console/apps': typeof AuthenticatedConsoleAppsRoute
@@ -458,6 +466,7 @@ export interface FileRoutesById {
   '/api/speech': typeof ApiSpeechRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/voice-reply': typeof ApiVoiceReplyRoute
+  '/go/$code': typeof GoCodeRoute
   '/_authenticated/app/$id': typeof AuthenticatedAppIdRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/_authenticated/console/apps': typeof AuthenticatedConsoleAppsRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/go/$code'
     | '/app/$id'
     | '/chat/$threadId'
     | '/console/apps'
@@ -562,6 +572,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/go/$code'
     | '/app/$id'
     | '/chat/$threadId'
     | '/console/apps'
@@ -614,6 +625,7 @@ export interface FileRouteTypes {
     | '/api/speech'
     | '/api/transcribe'
     | '/api/voice-reply'
+    | '/go/$code'
     | '/_authenticated/app/$id'
     | '/_authenticated/chat/$threadId'
     | '/_authenticated/console/apps'
@@ -655,6 +667,7 @@ export interface RootRouteChildren {
   ApiSpeechRoute: typeof ApiSpeechRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiVoiceReplyRoute: typeof ApiVoiceReplyRoute
+  GoCodeRoute: typeof GoCodeRoute
   ScramjetPSplatRoute: typeof ScramjetPSplatRoute
   ApiPublicCgSplatRoute: typeof ApiPublicCgSplatRoute
   ApiPublicFpSplatRoute: typeof ApiPublicFpSplatRoute
@@ -850,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/api/voice-reply'
       fullPath: '/api/voice-reply'
       preLoaderRoute: typeof ApiVoiceReplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/go/$code': {
+      id: '/go/$code'
+      path: '/go/$code'
+      fullPath: '/go/$code'
+      preLoaderRoute: typeof GoCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app/$id': {
@@ -1103,6 +1123,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSpeechRoute: ApiSpeechRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiVoiceReplyRoute: ApiVoiceReplyRoute,
+  GoCodeRoute: GoCodeRoute,
   ScramjetPSplatRoute: ScramjetPSplatRoute,
   ApiPublicCgSplatRoute: ApiPublicCgSplatRoute,
   ApiPublicFpSplatRoute: ApiPublicFpSplatRoute,
