@@ -13,6 +13,8 @@ import { WallpaperUpload } from "./WallpaperUpload";
 import { MusicUpload } from "./MusicUpload";
 import { WatchModeSetting } from "./WatchModeSetting";
 import { LinkGenerator } from "./LinkGenerator";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Soundboard } from "@/components/windows/views/Soundboard";
 import { LookExtrasControls } from "./LookExtras";
 import classicWallpaper from "@/assets/launcher-wallpaper.jpg";
 import windowsWallpaper from "@/assets/windows-wallpaper.jpg";
@@ -53,6 +55,7 @@ export function AppearanceSettings() {
     <Setting label="Accent color"><div className="flex max-w-72 flex-wrap gap-2">{Object.keys(ACCENTS).map(id => <Button key={id} variant="ghost" size="icon" aria-label={`${id === "star" ? "Native" : id} accent`} title={id === "star" ? "Native accent" : id} aria-pressed={!look.customAccent && look.accent === id} onClick={() => set({ accent: id as AppearanceProfile["accent"], customAccent: "" })} className={cn("appearance-swatch size-8 rounded-full border",!look.customAccent && look.accent === id && "ring-2 ring-foreground ring-offset-2 ring-offset-background")} data-swatch={id}>{!look.customAccent && look.accent === id && <Check className="size-3"/>}</Button>)}<Input type="color" aria-label="Custom accent color" title="Custom accent color" value={look.customAccent || "#55bbcc"} onChange={e => set({ customAccent: e.target.value })} className="size-9 cursor-pointer p-1"/></div></Setting>
     <Setting label="PNG / GIF background"><WallpaperUpload key={layout} layout={layout}/></Setting>
     <Setting label="MP3 music"><MusicUpload key={`music-${layout}`}/></Setting>
+    <Setting label="Soundboard"><Dialog><DialogTrigger asChild><Button variant="secondary">Open Soundboard</Button></DialogTrigger><DialogContent className="h-[80vh] max-w-3xl"><DialogTitle>Soundboard</DialogTitle><Soundboard/></DialogContent></Dialog></Setting>
     <Setting label="Movies location"><WatchModeSetting/></Setting>
     <Setting label="Link generator"><LinkGenerator/></Setting>
     <LookExtrasControls/>

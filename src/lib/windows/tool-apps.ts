@@ -71,13 +71,16 @@ export const toolAppId = (id: string) => `tool:${id}` as const;
 export const toolFromApp = (app: string) => app.startsWith("tool:") ? toolById(app.slice(5)) : undefined;
 
 const KEY = "birch-installed-tools";
-const DEFAULT_INSTALLED = ["theme-studio", "layout-switcher", "calculator", "notes"];
+const DEFAULT_INSTALLED = ["theme-studio", "layout-switcher", "calculator", "notes", "soundboard"];
+/** Apps added automatically once for existing devices too. */
+const AUTO_ADD = ["soundboard"];
 const subs = new Set<() => void>();
 let cache: string[] | null = null;
 function read(): string[] {
   if (cache) return cache;
   if (typeof window === "undefined") return DEFAULT_INSTALLED;
-  try { const raw = localStorage.getItem(KEY); cache = raw ? (JSON.parse(raw) as string[]).filter(id => toolById(id)) : DEFAULT_INSTALLED; } catch { cache = DEFAULT_INSTALLED; }
+  try { const raw = localStorage.getItem(KEY); cache = raw ? (JSON.parse(raw) as string[]).filter(id => toolById(id)) : DEFAULT_INSTALLED;
+    for (const id of AUTO_ADD) { const k = `birch-auto-added:${id}`; if (!localStorage.getItem(k)) { localStorage.setItem(k, "1"); if (!cache.includes(id)) { cache = [...cache, id]; localStorage.setItem(KEY, JSON.stringify(cache)); } } } } catch { cache = DEFAULT_INSTALLED; }
   return cache;
 }
 function write(ids: string[]) { cache = ids; try { localStorage.setItem(KEY, JSON.stringify(ids)); } catch { /* storage full */ } subs.forEach(f => f()); }
