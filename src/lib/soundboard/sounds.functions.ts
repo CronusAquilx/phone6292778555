@@ -12,8 +12,8 @@ export const searchSounds = createServerFn({ method: "GET" })
       const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", Accept: "text/html" } });
       if (!res.ok) return { sounds: [], error: `Sounds unavailable (${res.status})` };
       const html = await res.text();
-      const files = [...html.matchAll(/play\('([^']+\.mp3)'/g)].map(m => m[1]);
-      const names = [...html.matchAll(/class="instant-link[^"]*"[^>]*>([^<]*)</g)].map(m => m[1].trim());
+      const files = [...html.matchAll(/play\('([^']+\.mp3)'/g)].map(m => m[1] ?? "").filter(Boolean);
+      const names = [...html.matchAll(/class="instant-link[^"]*"[^>]*>([^<]*)</g)].map(m => (m[1] ?? "").trim());
       const seen = new Set<string>();
       const sounds: Sound[] = [];
       files.forEach((f, i) => { if (seen.has(f)) return; seen.add(f); sounds.push({ url: base + f, name: (names[i] || f.split("/").pop()!.replace(/\.mp3$/, "")).replace(/&amp;/g, "&").replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"') }); });
