@@ -27,6 +27,7 @@ export const TOOL_APPS: ToolApp[] = [
   { id: "word-count", title: "Word Counter", category: "Productivity", detail: "Words, characters, reading time", tone: "neutral" },
   { id: "habits", title: "Habit Tracker", category: "Productivity", detail: "Build streaks daily", tone: "green" },
   { id: "flashcards", title: "Flashcards", category: "Productivity", detail: "Make and study cards", tone: "violet" },
+  { id: "soundboard", title: "Soundboard", category: "Fun", detail: "Thousands of meme sounds: fahh, Quandale Dingle, vine boom and more", tone: "rose" },
   { id: "paint", title: "Paint", category: "Fun", detail: "Draw and save pictures", tone: "rose" },
   { id: "dice", title: "Dice & Coin", category: "Fun", detail: "Roll dice or flip a coin", tone: "gold" },
   { id: "typing", title: "Typing Test", category: "Fun", detail: "Measure your words per minute", tone: "cyan" },

@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { ACCENTS, PALETTES, setAppearance, getAppearance, setPrefs, usePrefs, type Prefs } from "@/lib/astra/prefs";
 import { activeLayout, LAYOUT_NAMES, VISIBLE_LAYOUTS, type AppearanceProfile } from "@/lib/astra/appearance";
 import { visitDestination } from "@/lib/console/visit";
+import { Soundboard } from "./Soundboard";
 import { toolById } from "@/lib/windows/tool-apps";
 
 function useStored<T>(key: string, init: T) {
@@ -169,7 +170,7 @@ const VIEWS: Record<string, () => React.ReactNode> = {
   "theme-studio": () => <ThemeStudio/>, "layout-switcher": () => <LayoutSwitcher/>, "ui-tuner": () => <UiTuner/>, effects: () => <Effects/>, "clock-style": () => <ClockStyle/>,
   calculator: () => <Calculator/>, converter: () => <Converter/>, weather: () => <Weather/>, "world-clock": () => <WorldClock/>, stopwatch: () => <Stopwatch/>, timer: () => <Countdown/>, calendar: () => <Calendar/>, password: () => <Password/>, tip: () => <Tip/>, age: () => <Age/>,
   notes: () => <Notes/>, todo: () => <Todo/>, pomodoro: () => <Countdown preset={[25, 5, 15, 50]}/>, "word-count": () => <WordCount/>, habits: () => <Habits/>, flashcards: () => <Flashcards/>,
-  paint: () => <Paint/>, dice: () => <Dice/>, typing: () => <Typing/>, reaction: () => <Reaction/>, metronome: () => <Metronome/>,
+  soundboard: () => <Soundboard/>, paint: () => <Paint/>, dice: () => <Dice/>, typing: () => <Typing/>, reaction: () => <Reaction/>, metronome: () => <Metronome/>,
   breathe: () => <Breathe/>, water: () => <Water/>, bmi: () => <Bmi/>, json: () => <Json/>, base64: () => <Base64/>, "color-picker": () => <ColorPicker/>, "screen-info": () => <ScreenInfo/>,
 };
 
