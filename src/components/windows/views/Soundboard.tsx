@@ -16,7 +16,7 @@ export function Soundboard() {
     search({ data: { q: term, page } }).then(r => { if (off) return; setSounds(s => page === 1 ? r.sounds : [...s, ...r.sounds]); if (r.error) setErr(r.error); }).finally(() => !off && setBusy(false));
     return () => { off = true; }; }, [term, page]);
   const go = (t: string) => { setQ(t); setTerm(t); setPage(1); };
-  const play = (s: Sound) => { audio.current?.pause(); const a = new Audio(s.url); a.volume = vol; audio.current = a; setPlaying(s.url); a.onended = () => setPlaying(null); a.play().catch(() => setPlaying(null)); };
+  const play = (s: Sound) => { audio.current?.pause(); const a = new Audio(`/api/public/sound?u=${encodeURIComponent(s.url)}`); a.volume = vol; audio.current = a; setPlaying(s.url); a.onended = () => setPlaying(null); a.play().catch(() => { setPlaying(null); setErr("That sound could not play, try another."); }); };
   const stop = () => { audio.current?.pause(); setPlaying(null); };
   return <div className="flex h-full flex-col gap-3">
     <form className="flex gap-2" onSubmit={e => { e.preventDefault(); go(q.trim()); }}>

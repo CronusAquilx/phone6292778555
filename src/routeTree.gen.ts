@@ -50,6 +50,7 @@ import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_auth
 import { Route as AuthenticatedConsoleSocialRouteImport } from './routes/_authenticated/console.social'
 import { Route as AuthenticatedConsoleStoreRouteImport } from './routes/_authenticated/console.store'
 import { Route as AuthenticatedMoviesIndexRouteImport } from './routes/_authenticated/movies.index'
+import { Route as ApiPublicSoundRouteImport } from './routes/api/public/sound'
 import { Route as ScramjetPSplatRouteImport } from './routes/scramjet.p.$'
 import { Route as AuthenticatedConsoleStreamAppRouteImport } from './routes/_authenticated/console.stream.$app'
 import { Route as AuthenticatedMoviesFreeVideoIdRouteImport } from './routes/_authenticated/movies.free.$videoId'
@@ -276,6 +277,11 @@ const AuthenticatedMoviesIndexRoute =
     path: '/movies/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSoundRoute = ApiPublicSoundRouteImport.update({
+  id: '/api/public/sound',
+  path: '/api/public/sound',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScramjetPSplatRoute = ScramjetPSplatRouteImport.update({
   id: '/scramjet/p/$',
   path: '/scramjet/p/$',
@@ -371,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/social': typeof AuthenticatedConsoleSocialRoute
   '/console/store': typeof AuthenticatedConsoleStoreRoute
+  '/api/public/sound': typeof ApiPublicSoundRoute
   '/scramjet/p/$': typeof ScramjetPSplatRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
@@ -423,6 +430,7 @@ export interface FileRoutesByTo {
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/social': typeof AuthenticatedConsoleSocialRoute
   '/console/store': typeof AuthenticatedConsoleStoreRoute
+  '/api/public/sound': typeof ApiPublicSoundRoute
   '/scramjet/p/$': typeof ScramjetPSplatRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
@@ -477,6 +485,7 @@ export interface FileRoutesById {
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/_authenticated/console/social': typeof AuthenticatedConsoleSocialRoute
   '/_authenticated/console/store': typeof AuthenticatedConsoleStoreRoute
+  '/api/public/sound': typeof ApiPublicSoundRoute
   '/scramjet/p/$': typeof ScramjetPSplatRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/console/settings'
     | '/console/social'
     | '/console/store'
+    | '/api/public/sound'
     | '/scramjet/p/$'
     | '/chat/'
     | '/console/'
@@ -583,6 +593,7 @@ export interface FileRouteTypes {
     | '/console/settings'
     | '/console/social'
     | '/console/store'
+    | '/api/public/sound'
     | '/scramjet/p/$'
     | '/chat'
     | '/console'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/settings'
     | '/_authenticated/console/social'
     | '/_authenticated/console/store'
+    | '/api/public/sound'
     | '/scramjet/p/$'
     | '/_authenticated/chat/'
     | '/_authenticated/console/'
@@ -668,6 +680,7 @@ export interface RootRouteChildren {
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiVoiceReplyRoute: typeof ApiVoiceReplyRoute
   GoCodeRoute: typeof GoCodeRoute
+  ApiPublicSoundRoute: typeof ApiPublicSoundRoute
   ScramjetPSplatRoute: typeof ScramjetPSplatRoute
   ApiPublicCgSplatRoute: typeof ApiPublicCgSplatRoute
   ApiPublicFpSplatRoute: typeof ApiPublicFpSplatRoute
@@ -963,6 +976,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMoviesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/sound': {
+      id: '/api/public/sound'
+      path: '/api/public/sound'
+      fullPath: '/api/public/sound'
+      preLoaderRoute: typeof ApiPublicSoundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scramjet/p/$': {
       id: '/scramjet/p/$'
       path: '/scramjet/p/$'
@@ -1124,6 +1144,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiVoiceReplyRoute: ApiVoiceReplyRoute,
   GoCodeRoute: GoCodeRoute,
+  ApiPublicSoundRoute: ApiPublicSoundRoute,
   ScramjetPSplatRoute: ScramjetPSplatRoute,
   ApiPublicCgSplatRoute: ApiPublicCgSplatRoute,
   ApiPublicFpSplatRoute: ApiPublicFpSplatRoute,
