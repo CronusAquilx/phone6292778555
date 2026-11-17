@@ -16,6 +16,7 @@
 - Reference console screens share one skin-scoped presentation for PS5, Xbox, Wii and Neutral, composing real catalog/library actions without fabricated system telemetry.
 
 - Browser proxy transports must live inside `createClientOnlyFn` so Worker module initialization never evaluates browser WASM transport packages.
+- Proxy startup runs scripts, worker activation and transport setup concurrently; relay retries are abortable and restricted to transient read failures, with concurrent-only session deduplication to avoid stale account credentials.
 - Opening choices and explicit account confirmation are document-scoped through VisitProvider; persisted preferences or restored auth sessions never mark a new visit complete, and standalone gameplay bypasses this flow.
 - Layout selection precedes the shared account picker on each document; account-specific device/focus setup is saved in profiles so returning users are not asked again.
 - Username accounts use normalized internal Auth email identities and optional contact email, with server-only identity resolution and rate-limited password verification; usernames never grant roles.

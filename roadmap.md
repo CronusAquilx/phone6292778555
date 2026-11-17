@@ -1,5 +1,9 @@
 # Birchbeat import roadmap
 
+## Proxy performance (Nov 17)
+- [x] Parallelize startup, recover failed script loads, reduce streaming copies and prevent unnecessary retries or abandoned sockets.
+- [x] Six focused proxy checks pass and automatic compilation is clean; provider logins/playback remain unverified. Site classification cannot be assigned by changing labels.
+
 ## First-visit changelog
 - [x] Show current features and fixes before layout selection.
 - [x] Remember dismissal per device and changelog version; standalone gameplay and proxied pages bypass it.

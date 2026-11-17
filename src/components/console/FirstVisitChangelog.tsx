@@ -18,6 +18,8 @@ const additions = [
 ];
 
 const fixes = [
+  "Proxy startup prepares connections in parallel without waiting for background update checks",
+  "Cancelled loads stop retrying, denied requests are not repeated, and streaming uses fewer memory copies",
   "Discord login no longer loads forever: it opens the Discord app page on the regular proxy",
   "Faster movie and anime loading with quicker retries for dropped video pieces",
   "Smoother desktop effects to reduce lag",

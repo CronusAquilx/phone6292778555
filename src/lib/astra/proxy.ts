@@ -83,8 +83,13 @@ function loadScript(src: string): Promise<void> {
 
 function loadProxyScripts(): Promise<void> {
   scriptsPromise ??= (async () => {
-    await loadScript("/scramjet/scramjet.js");
-    await loadScript("/scramjet/controller.api.js");
+    try {
+      await loadScript("/scramjet/scramjet.js");
+      await loadScript("/scramjet/controller.api.js");
+    } catch (error) {
+      scriptsPromise = null;
+      throw error;
+    }
   })();
   return scriptsPromise;
 }
@@ -122,16 +127,16 @@ const makeTransport = createClientOnlyFn(async (transport: Prefs["transport"], c
 });
 
 async function buildController(transport: Prefs["transport"], custom: string): Promise<Controller> {
-  await loadProxyScripts();
+  const workerPromise = (async () => {
+    const reg = await navigator.serviceWorker.register("/scramjet/sw.js?v=4", { scope: "/scramjet/p/", updateViaCache: "none" });
+    // Existing workers can serve immediately; check published updates in the background.
+    void reg.update().catch(() => {});
+    return waitForActive(reg);
+  })();
+  const [, sw, t] = await Promise.all([loadProxyScripts(), workerPromise, makeTransport(transport, custom)]);
   const { Controller } = (globalThis as Record<string, any>)["$scramjetController"] as {
     Controller: new (init: any) => Controller;
   };
-
-  const reg = await navigator.serviceWorker.register("/scramjet/sw.js?v=4", { scope: "/scramjet/p/", updateViaCache: "none" });
-  // Pick up a freshly published proxy worker right away instead of on the next visit.
-  await reg.update().catch(() => {});
-  if (reg.installing || reg.waiting) await waitForActive({ active: null, installing: reg.installing, waiting: reg.waiting } as ServiceWorkerRegistration).catch(() => {});
-  const [sw, t] = await Promise.all([waitForActive(reg), makeTransport(transport, custom)]);
 
   return new Controller({
     serviceworker: sw,

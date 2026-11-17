@@ -4,14 +4,24 @@ type RawHeaders = [string, string][];
 const NULL_BODY = new Set([101, 103, 204, 205, 304]);
 // Transient upstream/edge failures worth a quick retry for video segments.
 const RETRY_STATUS = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
-// Video players fire hundreds of segment requests; reading the session for each one
-// added latency. Cache the token briefly and refresh it in the background.
-let tokenCache: { value: string; at: number } | null = null;
+// Share concurrent session reads without retaining a previous account's token.
+let tokenPending: Promise<string> | null = null;
 async function relayAuthToken() {
-  if (tokenCache && Date.now() - tokenCache.at < 30_000) return tokenCache.value;
-  const { data } = await supabase.auth.getSession();
-  tokenCache = { value: data.session?.access_token ?? "guest", at: Date.now() };
-  return tokenCache.value;
+  tokenPending ??= supabase.auth.getSession().then(({ data }) => data.session?.access_token ?? "guest").finally(() => { tokenPending = null; });
+  return tokenPending;
+}
+
+class RelayHttpError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+function retryDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason ?? new DOMException("Aborted", "AbortError")); return; }
+    const abort = () => { clearTimeout(timer); reject(signal?.reason ?? new DOMException("Aborted", "AbortError")); };
+    const timer = setTimeout(() => { signal?.removeEventListener("abort", abort); resolve(); }, ms);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
 }
 
 /**
@@ -31,13 +41,13 @@ export class AstraRelayTransport {
         const res = await this.once(remote, method, body, headers, signal);
         if (retryable && attempt < 3 && RETRY_STATUS.has(res.status)) {
           void res.body?.cancel().catch(() => {});
-          await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
+          await retryDelay(150 * (attempt + 1), signal);
           continue;
         }
         return res;
       } catch (err) {
-        if (!retryable || attempt >= 3 || signal?.aborted) throw err;
-        await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
+        if (!retryable || attempt >= 3 || signal?.aborted || (err instanceof RelayHttpError && !RETRY_STATUS.has(err.status))) throw err;
+        await retryDelay(150 * (attempt + 1), signal);
       }
     }
   }
@@ -58,7 +68,7 @@ export class AstraRelayTransport {
     });
     if (res.headers.get("x-astra-status") !== "framed" || !res.body) {
       const text = await res.text().catch(() => "");
-      throw new Error(`Astra relay error ${res.status}: ${text.slice(0, 200)}`);
+      throw new RelayHttpError(res.status, `Astra relay error ${res.status}: ${text.slice(0, 200)}`);
     }
     // Read the metadata prefix, then pass the rest through as the page body.
     const reader = res.body.getReader();
@@ -70,14 +80,16 @@ export class AstraRelayTransport {
     };
     while (buf.length < 4) await pull();
     const len = new DataView(buf.buffer).getUint32(0);
+    if (len > 1_048_576) { await reader.cancel(); throw new RelayHttpError(502, "Invalid relay metadata"); }
     while (buf.length < 4 + len) await pull();
     const info = JSON.parse(new TextDecoder().decode(buf.subarray(4, 4 + len))) as { status: number; statusText: string; headers: RawHeaders };
-    const rest = buf.slice(4 + len);
+    const rest = buf.subarray(4 + len);
     const stream = new ReadableStream<Uint8Array>({
       start(c) { if (rest.length) c.enqueue(rest); },
       async pull(c) { const { done, value } = await reader.read(); if (done) c.close(); else c.enqueue(value); },
       cancel() { void reader.cancel(); },
     });
+    if (NULL_BODY.has(info.status)) await reader.cancel();
     return {
       body: (NULL_BODY.has(info.status) ? null : stream) as ReadableStream,
       headers: info.headers ?? [],
@@ -93,8 +105,10 @@ export class AstraRelayTransport {
   ): [(d: unknown) => void, (code: number, reason: string) => void] {
     let ws: WebSocket | null = null;
     let opened = false;
+    let closed = false;
     const pending: unknown[] = [];
     void supabase.auth.getSession().then(({ data }) => {
+      if (closed) return;
       const loc = window.location;
       const q = new URLSearchParams({ url: url.href, protocols: (protocols ?? []).join(","), origin: new URL(url.href.replace(/^ws/, "http")).origin, token: data.session?.access_token ?? "" });
       ws = new WebSocket(`${loc.protocol === "https:" ? "wss" : "ws"}://${loc.host}/api/proxy-ws?${q}`);
@@ -104,17 +118,17 @@ export class AstraRelayTransport {
           opened = true;
           let p = ""; try { p = JSON.parse(e.data).protocol ?? ""; } catch { /* ignore */ }
           onopen(p, "");
-          for (const d of pending.splice(0)) ws!.send(d as string);
+          for (const d of pending.splice(0)) ws?.send(d as string);
           return;
         }
         onmessage(e.data);
       };
       ws.onclose = (e) => onclose(e.code, e.reason);
       ws.onerror = () => onerror("Live connection failed");
-    });
+    }).catch(() => { if (!closed) onerror("Live connection authentication failed"); });
     return [
       (d) => { if (ws && opened) ws.send(d as string); else pending.push(d); },
-      (code, reason) => { try { ws?.close(code, reason); } catch { /* ignore */ } },
+      (code, reason) => { closed = true; pending.length = 0; try { ws?.close(code, reason); } catch { /* ignore */ } },
     ];
   }
 }
