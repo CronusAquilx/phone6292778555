@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { searchSounds, type Sound } from "@/lib/soundboard/sounds.functions";
 
-const QUICK = ["fahh", "quandale dingle", "vine boom", "bruh", "sus", "rizz", "skibidi", "oh no", "airhorn", "sad violin", "emotional damage", "windows error", "goofy", "meme", "anime wow", "minecraft"];
+const QUICK = ["he wanna pay full price", "dominican papi", "druski", "fahh", "quandale dingle", "vine boom", "bruh", "sus", "rizz", "skibidi", "oh no", "airhorn", "sad violin", "emotional damage", "windows error", "goofy", "meme", "anime wow", "minecraft"];
 
 export function Soundboard() {
   const search = useServerFn(searchSounds);
@@ -18,6 +18,9 @@ export function Soundboard() {
   const go = (t: string) => { setQ(t); setTerm(t); setPage(1); };
   const play = (s: Sound) => { audio.current?.pause(); const a = new Audio(`/api/public/sound?u=${encodeURIComponent(s.url)}`); a.volume = vol; audio.current = a; setPlaying(s.url); a.onended = () => setPlaying(null); a.play().catch(() => { setPlaying(null); setErr("That sound could not play, try another."); }); };
   const stop = () => { audio.current?.pause(); setPlaying(null); };
+  useEffect(() => { const k = (e: KeyboardEvent) => { const t = e.target as HTMLElement; if (t?.closest("input,textarea,[contenteditable=true]") || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "Escape") { stop(); return; } const i = "1234567890".indexOf(e.key); if (i >= 0 && sounds[i]) { e.preventDefault(); play(sounds[i]); } };
+    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
   return <div className="flex h-full flex-col gap-3">
     <form className="flex gap-2" onSubmit={e => { e.preventDefault(); go(q.trim()); }}>
       <Input aria-label="Search sounds" value={q} onChange={e => setQ(e.target.value)} placeholder="Search thousands of sounds"/>
@@ -25,9 +28,10 @@ export function Soundboard() {
     </form>
     <div className="flex flex-wrap gap-1">{["Trending", ...QUICK].map(t => <Button key={t} size="sm" variant={(t === "Trending" ? "" : t) === term ? "default" : "outline"} onClick={() => go(t === "Trending" ? "" : t)}>{t}</Button>)}</div>
     <label className="flex items-center gap-2 text-xs text-muted-foreground">Volume<input type="range" min={0} max={1} step={0.05} value={vol} onChange={e => { const v = +e.target.value; setVol(v); if (audio.current) audio.current.volume = v; }}/></label>
+    <p className="text-xs text-muted-foreground">Hotkeys: 1–9 and 0 play the first ten sounds, Esc stops.</p>
     {err && <p className="text-sm text-destructive">{err}</p>}
     <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(120px,1fr))] content-start gap-2 overflow-auto">
-      {sounds.map(s => <button key={s.url} onClick={() => play(s)} className={`rounded-lg border p-3 text-left text-sm font-medium transition hover:bg-accent ${playing === s.url ? "bg-primary text-primary-foreground" : "bg-card"}`}>{playing === s.url ? "▶ " : ""}{s.name}</button>)}
+      {sounds.map((s, i) => <button key={s.url} onClick={() => play(s)} className={`rounded-lg border p-3 text-left text-sm font-medium transition hover:bg-accent ${playing === s.url ? "bg-primary text-primary-foreground" : "bg-card"}`}>{i < 10 && <kbd className="mr-1 rounded border px-1 text-[10px] opacity-70">{(i + 1) % 10}</kbd>}{playing === s.url ? "▶ " : ""}{s.name}</button>)}
     </div>
     <Button variant="secondary" disabled={busy} onClick={() => setPage(p => p + 1)}>{busy ? "Loading…" : "Load more sounds"}</Button>
   </div>;
